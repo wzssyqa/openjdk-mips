@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_VM_ASM_ASSEMBLER_HPP
 #define SHARE_VM_ASM_ASSEMBLER_HPP
 
@@ -52,6 +58,10 @@
 #ifdef TARGET_ARCH_ppc
 # include "register_ppc.hpp"
 # include "vm_version_ppc.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "register_mips.hpp"
+# include "vm_version_mips.hpp"
 #endif
 
 // This file contains platform-independent assembler declarations.
@@ -451,6 +461,9 @@ class AbstractAssembler : public ResourceObj  {
 #endif
 #ifdef TARGET_ARCH_ppc
 # include "assembler_ppc.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "assembler_mips.hpp"
 #endif
 
 

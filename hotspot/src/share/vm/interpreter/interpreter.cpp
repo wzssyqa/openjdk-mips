@@ -76,7 +76,11 @@ void InterpreterCodelet::print_on(outputStream* st) const {
 
   if (PrintInterpreter) {
     st->cr();
+#ifndef MIPS64
     Disassembler::decode(code_begin(), code_end(), st, DEBUG_ONLY(_strings) NOT_DEBUG(CodeStrings()));
+#else
+    Disassembler::decode(code_begin(), code_end(), st);
+#endif //disassembler_mips.cpp not implement "decode(address start, address end, outputStream* st, CodeComments c". 2013/02/25.
   }
 }
 

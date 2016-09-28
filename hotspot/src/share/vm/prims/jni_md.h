@@ -22,6 +22,12 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 
 /* Switch to the correct jni_md.h file without reliance on -I options. */
 #ifdef TARGET_ARCH_x86
@@ -38,6 +44,9 @@
 #endif
 #ifdef TARGET_ARCH_ppc
 # include "jni_ppc.h"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "jni_mips.h"
 #endif
 
 

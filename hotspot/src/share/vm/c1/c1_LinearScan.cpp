@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #include "precompiled.hpp"
 #include "c1/c1_CFGPrinter.hpp"
 #include "c1/c1_CodeStubs.hpp"
@@ -34,6 +40,9 @@
 #include "utilities/bitMap.inline.hpp"
 #ifdef TARGET_ARCH_x86
 # include "vmreg_x86.inline.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "vmreg_mips.inline.hpp"
 #endif
 #ifdef TARGET_ARCH_sparc
 # include "vmreg_sparc.inline.hpp"
@@ -6225,6 +6234,7 @@ void ControlFlowOptimizer::delete_unnecessary_jumps(BlockList* code) {
 
             if (prev_branch->stub() == NULL) {
 
+#ifndef MIPS64  //MIPS64 not support lir_cmp. same as openjdk6.
               LIR_Op2* prev_cmp = NULL;
 
               for(int j = instructions->length() - 3; j >= 0 && prev_cmp == NULL; j--) {
@@ -6236,6 +6246,7 @@ void ControlFlowOptimizer::delete_unnecessary_jumps(BlockList* code) {
                 }
               }
               assert(prev_cmp != NULL, "should have found comp instruction for branch");
+#endif
               if (prev_branch->block() == code->at(i + 1) && prev_branch->info() == NULL) {
 
                 TRACE_LINEAR_SCAN(3, tty->print_cr("Negating conditional branch and deleting unconditional branch at end of block B%d", block->block_id()));
@@ -6243,7 +6254,9 @@ void ControlFlowOptimizer::delete_unnecessary_jumps(BlockList* code) {
                 // eliminate a conditional branch to the immediate successor
                 prev_branch->change_block(last_branch->block());
                 prev_branch->negate_cond();
+#ifndef MIPS64 //MIPS64 not support lir_cmp. same as openjdk6.
                 prev_cmp->set_condition(prev_branch->cond());
+#endif
                 instructions->truncate(instructions->length() - 1);
               }
             }
@@ -6551,8 +6564,10 @@ void LinearScanStatistic::collect(LinearScan* allocator) {
           break;
         }
 
+#ifndef MIPS64
         case lir_cmp:             inc_counter(counter_cmp); break;
 
+#endif
         case lir_branch:
         case lir_cond_float_branch: {
           LIR_OpBranch* branch = op->as_OpBranch();

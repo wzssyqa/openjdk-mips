@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_VM_RUNTIME_FRAME_INLINE_HPP
 #define SHARE_VM_RUNTIME_FRAME_INLINE_HPP
 
@@ -45,6 +51,9 @@
 #endif
 #ifdef TARGET_ARCH_ppc
 # include "jniTypes_ppc.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "jniTypes_mips.hpp"
 #endif
 #ifdef ZERO
 #ifdef TARGET_ARCH_zero
@@ -110,6 +119,9 @@ inline oop* frame::interpreter_frame_temp_oop_addr() const {
 #endif
 #ifdef TARGET_ARCH_ppc
 # include "frame_ppc.inline.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "frame_mips.inline.hpp"
 #endif
 
 

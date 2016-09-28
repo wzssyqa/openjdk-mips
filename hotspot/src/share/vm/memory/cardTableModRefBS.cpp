@@ -103,7 +103,13 @@ void CardTableModRefBS::initialize() {
 
   const size_t rs_align = _page_size == (size_t) os::vm_page_size() ? 0 :
     MAX2(_page_size, (size_t) os::vm_allocation_granularity());
+#ifdef MIPS64
+  /* 2013/10.25 Jin: try to allocate byte_map_base within 32-bit region.
+      FIXME: should automatically search a spare space. */ 
+  ReservedSpace heap_rs(_byte_map_size, rs_align, false, (char *)0x20000000);
+#else
   ReservedSpace heap_rs(_byte_map_size, rs_align, false);
+#endif
 
   MemTracker::record_virtual_memory_type((address)heap_rs.base(), mtGC);
 

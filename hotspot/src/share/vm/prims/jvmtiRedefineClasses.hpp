@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_VM_PRIMS_JVMTIREDEFINECLASSES_HPP
 #define SHARE_VM_PRIMS_JVMTIREDEFINECLASSES_HPP
 
@@ -32,6 +38,7 @@
 #include "oops/objArrayOop.hpp"
 #include "prims/jvmtiRedefineClassesTrace.hpp"
 #include "runtime/vm_operations.hpp"
+#include "prims/jvmtiThreadState.hpp"
 
 // Introduction:
 //

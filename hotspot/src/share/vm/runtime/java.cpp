@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #include "precompiled.hpp"
 #include "classfile/classLoader.hpp"
 #include "classfile/symbolTable.hpp"
@@ -78,6 +84,9 @@
 #endif
 #ifdef TARGET_ARCH_ppc
 # include "vm_version_ppc.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "vm_version_mips.hpp"
 #endif
 #if INCLUDE_ALL_GCS
 #include "gc_implementation/concurrentMarkSweep/concurrentMarkSweepThread.hpp"

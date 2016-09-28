@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_VM_C1_C1_LIRASSEMBLER_HPP
 #define SHARE_VM_C1_C1_LIRASSEMBLER_HPP
 
@@ -213,6 +219,9 @@ class LIR_Assembler: public CompilationResourceObj {
   void emit_delay(LIR_OpDelay* op);
 
   void arith_op(LIR_Code code, LIR_Opr left, LIR_Opr right, LIR_Opr dest, CodeEmitInfo* info, bool pop_fpu_stack);
+#ifdef MIPS64
+  void arithmetic_frem(LIR_Code code, LIR_Opr left, LIR_Opr right, LIR_Opr temp, LIR_Opr result, CodeEmitInfo* info = NULL);
+#endif
   void arithmetic_idiv(LIR_Code code, LIR_Opr left, LIR_Opr right, LIR_Opr temp, LIR_Opr result, CodeEmitInfo* info);
   void intrinsic_op(LIR_Code code, LIR_Opr value, LIR_Opr unused, LIR_Opr dest, LIR_Op* op);
 #ifdef ASSERT
@@ -264,6 +273,9 @@ class LIR_Assembler: public CompilationResourceObj {
 
 #ifdef TARGET_ARCH_x86
 # include "c1_LIRAssembler_x86.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "c1_LIRAssembler_mips.hpp"
 #endif
 #ifdef TARGET_ARCH_sparc
 # include "c1_LIRAssembler_sparc.hpp"

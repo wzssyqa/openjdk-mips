@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #include "precompiled.hpp"
 #include "c1/c1_InstructionPrinter.hpp"
 #include "c1/c1_LIR.hpp"
@@ -63,6 +69,25 @@ FloatRegister LIR_OprDesc::as_float_reg() const {
 
 FloatRegister LIR_OprDesc::as_double_reg() const {
   return FrameMap::nr2floatreg(fpu_regnrHi());
+}
+
+#endif
+#ifdef MIPS64
+
+FloatRegister LIR_OprDesc::as_float_reg() const {
+        return FrameMap::nr2floatreg(fpu_regnr());
+}
+
+FloatRegister LIR_OprDesc::as_double_reg() const {
+        return FrameMap::nr2floatreg(fpu_regnrHi());
+}
+
+FloatRegister LIR_OprDesc::as_fpu_lo() const {
+        return FrameMap::nr2floatreg(fpu_regnrLo());
+}
+
+FloatRegister LIR_OprDesc::as_fpu_hi() const {
+        return FrameMap::nr2floatreg(fpu_regnrHi());
 }
 
 #endif
@@ -150,8 +175,10 @@ void LIR_Address::verify0() const {
 #ifdef _LP64
   assert(base()->is_cpu_register(), "wrong base operand");
   assert(index()->is_illegal() || index()->is_double_cpu(), "wrong index operand");
+#ifndef MIPS64
   assert(base()->type() == T_OBJECT || base()->type() == T_LONG || base()->type() == T_METADATA,
          "wrong type for addresses");
+#endif
 #else
   assert(base()->is_single_cpu(), "wrong base operand");
   assert(index()->is_illegal() || index()->is_single_cpu(), "wrong index operand");
@@ -298,6 +325,7 @@ void LIR_Op2::verify() const {
 }
 
 
+#ifndef MIPS64
 LIR_OpBranch::LIR_OpBranch(LIR_Condition cond, BasicType type, BlockBegin* block)
   : LIR_Op(lir_branch, LIR_OprFact::illegalOpr, (CodeEmitInfo*)NULL)
   , _cond(cond)
@@ -328,6 +356,43 @@ LIR_OpBranch::LIR_OpBranch(LIR_Condition cond, BasicType type, BlockBegin* block
   , _stub(NULL)
 {
 }
+
+#else
+LIR_OpBranch::LIR_OpBranch(LIR_Condition cond, LIR_Opr left, LIR_Opr right, BasicType type,
+  BlockBegin* block):
+        LIR_Op2(lir_branch, left, right, LIR_OprFact::illegalOpr, (CodeEmitInfo *)(NULL)),
+        _cond(cond),
+        _type(type),
+        _label(block->label()),
+        _block(block),
+        _ublock(NULL),
+        _stub(NULL) {
+}
+
+LIR_OpBranch::LIR_OpBranch(LIR_Condition cond, LIR_Opr left, LIR_Opr right, BasicType type,
+  CodeStub* stub):
+        LIR_Op2(lir_branch, left, right, LIR_OprFact::illegalOpr, (CodeEmitInfo *)(NULL)),
+        _cond(cond),
+        _type(type),
+        _label(stub->entry()),
+        _block(NULL),
+        _ublock(NULL),
+        _stub(stub) {
+}
+
+
+LIR_OpBranch::LIR_OpBranch(LIR_Condition cond, LIR_Opr left, LIR_Opr right, BasicType type,
+  BlockBegin *block, BlockBegin *ublock):
+        LIR_Op2(lir_branch, left, right, LIR_OprFact::illegalOpr, (CodeEmitInfo *)(NULL)),
+        _cond(cond),
+        _type(type),
+        _label(block->label()),
+        _block(block),
+        _ublock(ublock),
+        _stub(NULL) {
+}
+
+#endif 
 
 void LIR_OpBranch::change_block(BlockBegin* b) {
   assert(_block != NULL, "must have old block");
@@ -572,6 +637,15 @@ void LIR_OpVisitState::visit(LIR_Op* op) {
       assert(op->as_OpBranch() != NULL, "must be");
       LIR_OpBranch* opBranch = (LIR_OpBranch*)op;
 
+#ifdef MIPS64
+      if (opBranch->_opr1->is_valid())         do_input(opBranch->_opr1);
+      if (opBranch->_opr2->is_valid())         do_input(opBranch->_opr2);
+      if (opBranch->_tmp1->is_valid())          do_temp(opBranch->_tmp1);
+      if (opBranch->_tmp2->is_valid())          do_temp(opBranch->_tmp2);
+      if (opBranch->_tmp3->is_valid())          do_temp(opBranch->_tmp3);
+      if (opBranch->_tmp4->is_valid())          do_temp(opBranch->_tmp4);
+      if (opBranch->_tmp5->is_valid())          do_temp(opBranch->_tmp5);
+#endif
       if (opBranch->_info != NULL)     do_info(opBranch->_info);
       assert(opBranch->_result->is_illegal(), "not used");
       if (opBranch->_stub != NULL)     opBranch->stub()->visit(this);
@@ -594,6 +668,10 @@ void LIR_OpVisitState::visit(LIR_Op* op) {
       if (opAllocObj->_tmp2->is_valid())         do_temp(opAllocObj->_tmp2);
       if (opAllocObj->_tmp3->is_valid())         do_temp(opAllocObj->_tmp3);
       if (opAllocObj->_tmp4->is_valid())         do_temp(opAllocObj->_tmp4);
+#ifdef MIPS64
+      if (opAllocObj->_tmp5->is_valid())         do_temp(opAllocObj->_tmp5);
+      if (opAllocObj->_tmp6->is_valid())         do_temp(opAllocObj->_tmp6);
+#endif
       if (opAllocObj->_result->is_valid())       do_output(opAllocObj->_result);
                                                  do_stub(opAllocObj->_stub);
       break;
@@ -615,7 +693,11 @@ void LIR_OpVisitState::visit(LIR_Op* op) {
 
 
 // LIR_Op2
+#ifdef MIPS64
+    case lir_null_check_for_branch:
+#else
     case lir_cmp:
+#endif
     case lir_cmp_l2i:
     case lir_ucmp_fd2i:
     case lir_cmp_fd2i:
@@ -783,6 +865,9 @@ void LIR_OpVisitState::visit(LIR_Op* op) {
     }
 
 // LIR_Op3
+#ifdef MIPS64
+    case lir_frem:
+#endif
     case lir_idiv:
     case lir_irem: {
       assert(op->as_Op3() != NULL, "must be");
@@ -867,7 +952,9 @@ void LIR_OpVisitState::visit(LIR_Op* op) {
       assert(opArrayCopy->_dst->is_valid(), "used");          do_input(opArrayCopy->_dst);     do_temp(opArrayCopy->_dst);
       assert(opArrayCopy->_dst_pos->is_valid(), "used");      do_input(opArrayCopy->_dst_pos); do_temp(opArrayCopy->_dst_pos);
       assert(opArrayCopy->_length->is_valid(), "used");       do_input(opArrayCopy->_length);  do_temp(opArrayCopy->_length);
+#ifndef MIPS64
       assert(opArrayCopy->_tmp->is_valid(), "used");          do_temp(opArrayCopy->_tmp);
+#endif
       if (opArrayCopy->_info)                     do_info(opArrayCopy->_info);
 
       // the implementation of arraycopy always has a call into the runtime
@@ -982,6 +1069,9 @@ void LIR_OpVisitState::visit(LIR_Op* op) {
       if (opAllocArray->_tmp2->is_valid())            do_temp(opAllocArray->_tmp2);
       if (opAllocArray->_tmp3->is_valid())            do_temp(opAllocArray->_tmp3);
       if (opAllocArray->_tmp4->is_valid())            do_temp(opAllocArray->_tmp4);
+#ifdef MIPS64
+      if (opAllocArray->_tmp5->is_valid())            do_temp(opAllocArray->_tmp5);
+#endif
       if (opAllocArray->_result->is_valid())          do_output(opAllocArray->_result);
                                                       do_stub(opAllocArray->_stub);
       break;
@@ -1252,6 +1342,7 @@ void LIR_List::volatile_load_mem_reg(LIR_Address* address, LIR_Opr dst, CodeEmit
 }
 
 void LIR_List::volatile_load_unsafe_reg(LIR_Opr base, LIR_Opr offset, LIR_Opr dst, BasicType type, CodeEmitInfo* info, LIR_PatchCode patch_code) {
+#ifndef MIPS64
   append(new LIR_Op1(
             lir_move,
             LIR_OprFact::address(new LIR_Address(base, offset, type)),
@@ -1259,6 +1350,16 @@ void LIR_List::volatile_load_unsafe_reg(LIR_Opr base, LIR_Opr offset, LIR_Opr ds
             type,
             patch_code,
             info, lir_move_volatile));
+#else
+  add(base, offset, base);
+  append(new LIR_Op1(
+            lir_move,
+            LIR_OprFact::address(new LIR_Address(base, 0, type)),
+            dst,
+            type,
+            patch_code,
+            info, lir_move_volatile));
+#endif
 }
 
 
@@ -1314,6 +1415,7 @@ void LIR_List::volatile_store_mem_reg(LIR_Opr src, LIR_Address* addr, CodeEmitIn
 }
 
 void LIR_List::volatile_store_unsafe_reg(LIR_Opr src, LIR_Opr base, LIR_Opr offset, BasicType type, CodeEmitInfo* info, LIR_PatchCode patch_code) {
+#ifndef MIPS64
   append(new LIR_Op1(
             lir_move,
             src,
@@ -1321,8 +1423,31 @@ void LIR_List::volatile_store_unsafe_reg(LIR_Opr src, LIR_Opr base, LIR_Opr offs
             type,
             patch_code,
             info, lir_move_volatile));
+#else
+  add(base, offset, base);
+  append(new LIR_Op1(
+            lir_move,
+            src,
+            LIR_OprFact::address(new LIR_Address(base, 0, type)),
+            type,
+            patch_code,
+            info, lir_move_volatile));
+
+#endif
+
 }
 
+#ifdef MIPS64
+void LIR_List::frem(LIR_Opr left, LIR_Opr right, LIR_Opr res, LIR_Opr tmp, CodeEmitInfo* info) {
+  append(new LIR_Op3(
+                    lir_frem,
+                    left,
+                    right,
+                    tmp,
+                    res,
+                    info));
+}
+#endif
 
 void LIR_List::idiv(LIR_Opr left, LIR_Opr right, LIR_Opr res, LIR_Opr tmp, CodeEmitInfo* info) {
   append(new LIR_Op3(
@@ -1368,6 +1493,7 @@ void LIR_List::irem(LIR_Opr left, int right, LIR_Opr res, LIR_Opr tmp, CodeEmitI
 }
 
 
+#ifndef MIPS64
 void LIR_List::cmp_mem_int(LIR_Condition condition, LIR_Opr base, int disp, int c, CodeEmitInfo* info) {
   append(new LIR_Op2(
                     lir_cmp,
@@ -1414,6 +1540,39 @@ void LIR_List::allocate_array(LIR_Opr dst, LIR_Opr len, LIR_Opr t1,LIR_Opr t2, L
                            type,
                            stub));
 }
+#else
+ void LIR_List::allocate_object(LIR_Opr dst, LIR_Opr t1, LIR_Opr t2, LIR_Opr t3, LIR_Opr t4, LIR_Opr t5, LIR_Opr t6,
+                                int header_size, int object_size, LIR_Opr klass, bool init_check, CodeStub* stub) {
+        append(new LIR_OpAllocObj(
+                                klass,
+                                dst,
+                                t1,
+                                t2,
+                                t3,
+                                t4,
+                                t5,
+                                t6,
+                                header_size,
+                                object_size,
+                                init_check,
+                                stub));
+}
+void LIR_List::allocate_array(LIR_Opr dst, LIR_Opr len, LIR_Opr t1,LIR_Opr t2, LIR_Opr t3,LIR_Opr t4, LIR_Opr t5,
+                                BasicType type, LIR_Opr klass, CodeStub* stub) {
+        append(new LIR_OpAllocArray(
+                                klass,
+                                len,
+                                dst,
+                                t1,
+                                t2,
+                                t3,
+                                t4,
+                                t5,
+                                type,
+                                stub));
+}
+
+#endif
 
 void LIR_List::shift_left(LIR_Opr value, LIR_Opr count, LIR_Opr dst, LIR_Opr tmp) {
  append(new LIR_Op2(
@@ -1504,7 +1663,6 @@ void LIR_List::instanceof(LIR_Opr result, LIR_Opr object, ciKlass* klass, LIR_Op
   append(c);
 }
 
-
 void LIR_List::store_check(LIR_Opr object, LIR_Opr array, LIR_Opr tmp1, LIR_Opr tmp2, LIR_Opr tmp3,
                            CodeEmitInfo* info_for_exception, ciMethod* profiled_method, int profiled_bci) {
   LIR_OpTypeCheck* c = new LIR_OpTypeCheck(lir_store_check, object, array, tmp1, tmp2, tmp3, info_for_exception);
@@ -1516,7 +1674,7 @@ void LIR_List::store_check(LIR_Opr object, LIR_Opr array, LIR_Opr tmp1, LIR_Opr 
   append(c);
 }
 
-
+#ifndef MIPS64
 void LIR_List::cas_long(LIR_Opr addr, LIR_Opr cmp_value, LIR_Opr new_value,
                         LIR_Opr t1, LIR_Opr t2, LIR_Opr result) {
   append(new LIR_OpCompareAndSwap(lir_cas_long, addr, cmp_value, new_value, t1, t2, result));
@@ -1531,6 +1689,43 @@ void LIR_List::cas_int(LIR_Opr addr, LIR_Opr cmp_value, LIR_Opr new_value,
                        LIR_Opr t1, LIR_Opr t2, LIR_Opr result) {
   append(new LIR_OpCompareAndSwap(lir_cas_int, addr, cmp_value, new_value, t1, t2, result));
 }
+#else
+void LIR_List::cas_long(LIR_Opr addr, LIR_Opr cmp_value, LIR_Opr new_value, LIR_Opr t1, LIR_Opr t2, LIR_Opr result) {
+  // Compare and swap produces condition code "zero" if contents_of(addr) == cmp_value,
+  //   // implying successful swap of new_value into addr
+   append(new LIR_OpCompareAndSwap(lir_cas_long,
+                        addr,
+                        cmp_value,
+                        new_value,
+                        t1,
+                        t2,
+                        result));
+}
+
+void LIR_List::cas_obj(LIR_Opr addr, LIR_Opr cmp_value, LIR_Opr new_value, LIR_Opr t1, LIR_Opr t2, LIR_Opr result) {
+  // Compare and swap produces condition code "zero" if contents_of(addr) == cmp_value,
+  //   // implying successful swap of new_value into addr
+    append(new LIR_OpCompareAndSwap(lir_cas_obj,
+                        addr,
+                        cmp_value,
+                        new_value,
+                        t1,
+                        t2,
+                        result));
+}
+
+void LIR_List::cas_int(LIR_Opr addr, LIR_Opr cmp_value, LIR_Opr new_value, LIR_Opr t1, LIR_Opr t2, LIR_Opr result) {
+  // Compare and swap produces condition code "zero" if contents_of(addr) == cmp_value,
+  //   // implying successful swap of new_value into addr
+    append(new LIR_OpCompareAndSwap(lir_cas_int,
+                        addr,
+                        cmp_value,
+                        new_value,
+                        t1,
+                        t2,
+                        result));
+}
+#endif
 
 
 #ifdef PRODUCT
@@ -1616,6 +1811,7 @@ void LIR_Const::print_value_on(outputStream* out) const {
 // LIR_Address
 void LIR_Address::print_value_on(outputStream* out) const {
   out->print("Base:"); _base->print(out);
+#ifndef MIPS64
   if (!_index->is_illegal()) {
     out->print(" Index:"); _index->print(out);
     switch (scale()) {
@@ -1625,6 +1821,7 @@ void LIR_Address::print_value_on(outputStream* out) const {
     case times_8: out->print(" * 8"); break;
     }
   }
+#endif
   out->print(" Disp: " INTX_FORMAT, _disp);
 }
 
@@ -1756,7 +1953,11 @@ const char * LIR_Op::name() const {
      case lir_pack64:                s = "pack64";        break;
      case lir_unpack64:              s = "unpack64";      break;
      // LIR_Op2
+#ifdef MIPS64
+     case lir_null_check_for_branch: s = "null_check_for_branch"; break;
+#else
      case lir_cmp:                   s = "cmp";           break;
+#endif
      case lir_cmp_l2i:               s = "cmp_l2i";       break;
      case lir_ucmp_fd2i:             s = "ucomp_fd2i";    break;
      case lir_cmp_fd2i:              s = "comp_fd2i";     break;
@@ -1787,6 +1988,9 @@ const char * LIR_Op::name() const {
      case lir_xadd:                  s = "xadd";          break;
      case lir_xchg:                  s = "xchg";          break;
      // LIR_Op3
+#ifdef MIPS64
+     case lir_frem:                  s = "frem";          break;
+#endif
      case lir_idiv:                  s = "idiv";          break;
      case lir_irem:                  s = "irem";          break;
      // LIR_OpJavaCall
@@ -1925,6 +2129,10 @@ void LIR_Op1::print_patch_code(outputStream* out, LIR_PatchCode code) {
 // LIR_OpBranch
 void LIR_OpBranch::print_instr(outputStream* out) const {
   print_condition(out, cond());             out->print(" ");
+#ifdef MIPS64
+  in_opr1()->print(out); out->print(" ");
+  in_opr2()->print(out); out->print(" ");
+endif
   if (block() != NULL) {
     out->print("[B%d] ", block()->block_id());
   } else if (stub() != NULL) {
@@ -1998,6 +2206,10 @@ void LIR_OpAllocObj::print_instr(outputStream* out) const {
   tmp2()->print(out);                       out->print(" ");
   tmp3()->print(out);                       out->print(" ");
   tmp4()->print(out);                       out->print(" ");
+#ifdef MIPS64
+  tmp5()->print(out);                       out->print(" ");
+  tmp6()->print(out);                       out->print(" ");
+#endif
   out->print("[hdr:%d]", header_size()); out->print(" ");
   out->print("[obj:%d]", object_size()); out->print(" ");
   out->print("[lbl:" INTPTR_FORMAT "]", p2i(stub()->entry()));
@@ -2011,9 +2223,11 @@ void LIR_OpRoundFP::print_instr(outputStream* out) const {
 
 // LIR_Op2
 void LIR_Op2::print_instr(outputStream* out) const {
+#ifndef MIPS64
   if (code() == lir_cmove) {
     print_condition(out, condition());         out->print(" ");
   }
+#endif
   in_opr1()->print(out);    out->print(" ");
   in_opr2()->print(out);    out->print(" ");
   if (tmp1_opr()->is_valid()) { tmp1_opr()->print(out);    out->print(" "); }
@@ -2032,6 +2246,9 @@ void LIR_OpAllocArray::print_instr(outputStream* out) const {
   tmp2()->print(out);                    out->print(" ");
   tmp3()->print(out);                    out->print(" ");
   tmp4()->print(out);                    out->print(" ");
+#ifdef MIPS64
+  tmp5()->print(out);                    out->print(" ");
+#endif
   out->print("[type:0x%x]", type());     out->print(" ");
   out->print("[label:" INTPTR_FORMAT "]", p2i(stub()->entry()));
 }

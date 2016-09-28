@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_VM_UTILITIES_MACROS_HPP
 #define SHARE_VM_UTILITIES_MACROS_HPP
 
@@ -262,6 +268,14 @@
 #define NOT_AIX(code) code
 #endif
 
+#ifdef AIX
+#define AIX_ONLY(code) code
+#define NOT_AIX(code)
+#else
+#define AIX_ONLY(code)
+#define NOT_AIX(code) code
+#endif
+
 #ifdef SOLARIS
 #define SOLARIS_ONLY(code) code
 #define NOT_SOLARIS(code)
@@ -406,6 +420,34 @@
 #else
 #define ARM32_ONLY(code)
 #define NOT_ARM32(code) code
+#endif
+
+#if defined(MIPS32) || defined(MIPS64)
+#ifndef MIPS
+#define MIPS
+#endif
+#define MIPS_ONLY(code) code
+#define NOT_MIPS(code)a
+#else
+#undef MIPS
+#define MIPS_ONLY(code)
+#define NOT_MIPS(code) code
+#endif
+
+#ifdef MIPS32
+#define MIPS32_ONLY(code) code
+#define NOT_MIPS32(code)
+#else
+#define MIPS32_ONLY(code)
+#define NOT_MIPS32(code) code
+#endif
+
+#ifdef MIPS64
+#define MIPS64_ONLY(code) code
+#define NOT_MIPS64(code)
+#else
+#define MIPS64_ONLY(code)
+#define NOT_MIPS64(code) code
 #endif
 
 #ifdef JAVASE_EMBEDDED

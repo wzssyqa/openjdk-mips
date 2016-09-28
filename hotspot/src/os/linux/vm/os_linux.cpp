@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 // no precompiled headers
 #include "classfile/classLoader.hpp"
 #include "classfile/systemDictionary.hpp"
@@ -979,6 +985,14 @@ void os::pd_start_thread(Thread* thread) {
   Monitor* sync_with_child = osthread->startThread_lock();
   MutexLockerEx ml(sync_with_child, Mutex::_no_safepoint_check_flag);
   sync_with_child->notify();
+
+#ifdef MIPS64
+  /* 2013/11/5 Jin: To be accessed in NativeGeneralJump::patch_verified_entry() */
+  if (thread->is_Java_thread())
+  {
+    ((JavaThread*)thread)->set_handle_wrong_method_stub(SharedRuntime::get_handle_wrong_method_stub());
+  }
+#endif
 }
 
 // Free Linux resources related to the OSThread
@@ -1918,6 +1932,8 @@ void * os::dll_load(const char *filename, char *ebuf, int ebuflen)
     static  Elf32_Half running_arch_code=EM_SPARCV9;
   #elif  (defined __sparc) && (!defined _LP64)
     static  Elf32_Half running_arch_code=EM_SPARC;
+  #elif  (defined MIPS64) || (defined MIPS32)
+    static  Elf32_Half running_arch_code=EM_MIPS;
   #elif  (defined __powerpc64__)
     static  Elf32_Half running_arch_code=EM_PPC64;
   #elif  (defined __powerpc__)
@@ -1938,7 +1954,7 @@ void * os::dll_load(const char *filename, char *ebuf, int ebuflen)
     static  Elf32_Half running_arch_code=EM_68K;
   #else
     #error Method os::dll_load requires that one of following is defined:\
-         IA32, AMD64, IA64, __sparc, __powerpc__, ARM, S390, ALPHA, MIPS, MIPSEL, PARISC, M68K
+         IA32, AMD64, IA64, MIPS32, MIPS64, __sparc, __powerpc__, ARM, S390, ALPHA, MIPS, MIPSEL, PARISC, M68K
   #endif
 
   // Identify compatability class for VM's architecture and library's architecture

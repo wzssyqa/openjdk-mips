@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #include "precompiled.hpp"
 #include "c1/c1_Defs.hpp"
 #include "c1/c1_Compilation.hpp"
@@ -305,6 +311,15 @@ jlong LIRItem::get_jlong_constant() const {
 
 void LIRGenerator::init() {
   _bs = Universe::heap()->barrier_set();
+#ifdef MIPS64
+        assert(_bs->kind() == BarrierSet::CardTableModRef, "Wrong barrier set kind");
+        CardTableModRefBS* ct = (CardTableModRefBS*)_bs;
+        assert(sizeof(*ct->byte_map_base) == sizeof(jbyte), "adjust this code");
+        //_card_table_base = new LIR_Const((intptr_t)ct->byte_map_base);
+        //        //FIXME, untested in 32bit. by aoqi
+        _card_table_base = new LIR_Const(ct->byte_map_base);
+#endif
+
 }
 
 
@@ -482,13 +497,27 @@ void LIRGenerator::array_range_check(LIR_Opr array, LIR_Opr index,
                                     CodeEmitInfo* null_check_info, CodeEmitInfo* range_check_info) {
   CodeStub* stub = new RangeCheckStub(range_check_info, index);
   if (index->is_constant()) {
+#ifndef MIPS64
     cmp_mem_int(lir_cond_belowEqual, array, arrayOopDesc::length_offset_in_bytes(),
                 index->as_jint(), null_check_info);
     __ branch(lir_cond_belowEqual, T_INT, stub); // forward branch
+#else
+        LIR_Opr left = LIR_OprFact::address(new LIR_Address(array, arrayOopDesc::length_offset_in_bytes(), T_INT));
+        LIR_Opr right = LIR_OprFact::intConst(index->as_jint());
+	__ null_check_for_branch(lir_cond_belowEqual, left, right, null_check_info);
+        __ branch(lir_cond_belowEqual, left, right ,T_INT, stub); // forward branch
+#endif
   } else {
+#ifndef MIPS64
     cmp_reg_mem(lir_cond_aboveEqual, index, array,
                 arrayOopDesc::length_offset_in_bytes(), T_INT, null_check_info);
     __ branch(lir_cond_aboveEqual, T_INT, stub); // forward branch
+#else
+        LIR_Opr left = index;
+        LIR_Opr right = LIR_OprFact::address(new LIR_Address( array, arrayOopDesc::length_offset_in_bytes(), T_INT));
+        __ null_check_for_branch(lir_cond_aboveEqual, left, right, null_check_info);
+	__ branch(lir_cond_aboveEqual,left, right ,T_INT, stub); // forward branch
+#endif
   }
 }
 
@@ -496,12 +525,26 @@ void LIRGenerator::array_range_check(LIR_Opr array, LIR_Opr index,
 void LIRGenerator::nio_range_check(LIR_Opr buffer, LIR_Opr index, LIR_Opr result, CodeEmitInfo* info) {
   CodeStub* stub = new RangeCheckStub(info, index, true);
   if (index->is_constant()) {
+#ifndef MIPS64
     cmp_mem_int(lir_cond_belowEqual, buffer, java_nio_Buffer::limit_offset(), index->as_jint(), info);
     __ branch(lir_cond_belowEqual, T_INT, stub); // forward branch
+#else
+        LIR_Opr left = LIR_OprFact::address(new LIR_Address(buffer, java_nio_Buffer::limit_offset(),T_INT));
+        LIR_Opr right = LIR_OprFact::intConst(index->as_jint());
+	__ null_check_for_branch(lir_cond_belowEqual, left, right, info);
+        __ branch(lir_cond_belowEqual,left, right ,T_INT, stub); // forward branch
+#endif
   } else {
+#ifndef MIPS64
     cmp_reg_mem(lir_cond_aboveEqual, index, buffer,
                 java_nio_Buffer::limit_offset(), T_INT, info);
     __ branch(lir_cond_aboveEqual, T_INT, stub); // forward branch
+#else
+        LIR_Opr left = index;
+        LIR_Opr right = LIR_OprFact::address(new LIR_Address( buffer, java_nio_Buffer::limit_offset(), T_INT));
+	__ null_check_for_branch(lir_cond_aboveEqual, left, right, info);
+        __ branch(lir_cond_aboveEqual,left, right ,T_INT, stub); // forward branch
+#endif
   }
   __ move(index, result);
 }
@@ -671,7 +714,12 @@ void LIRGenerator::print_if_not_loaded(const NewInstance* new_instance) {
 }
 #endif
 
+#ifndef MIPS64
 void LIRGenerator::new_instance(LIR_Opr dst, ciInstanceKlass* klass, bool is_unresolved, LIR_Opr scratch1, LIR_Opr scratch2, LIR_Opr scratch3, LIR_Opr scratch4, LIR_Opr klass_reg, CodeEmitInfo* info) {
+#else
+void LIRGenerator::new_instance(LIR_Opr dst, ciInstanceKlass* klass, LIR_Opr scratch1, LIR_Opr scratch2, LIR_Opr scratch3, 
+                                LIR_Opr scratch4, LIR_Opr scratch5, LIR_Opr scratch6,LIR_Opr klass_reg, CodeEmitInfo* info) {
+#endif
   klass2reg_with_patching(klass_reg, klass, info, is_unresolved);
   // If klass is not loaded we do not know if the klass has finalizers:
   if (UseFastNewInstance && klass->is_loaded()
@@ -685,12 +733,23 @@ void LIRGenerator::new_instance(LIR_Opr dst, ciInstanceKlass* klass, bool is_unr
     // allocate space for instance
     assert(klass->size_helper() >= 0, "illegal instance size");
     const int instance_size = align_object_size(klass->size_helper());
+#ifndef MIPS64
     __ allocate_object(dst, scratch1, scratch2, scratch3, scratch4,
                        oopDesc::header_size(), instance_size, klass_reg, !klass->is_initialized(), slow_path);
+#else
+    __ allocate_object(dst, scratch1, scratch2, scratch3, scratch4, scratch5, scratch6,
+                        oopDesc::header_size(), instance_size, klass_reg, !klass->is_initialized(), slow_path);
+
+#endif
   } else {
     CodeStub* slow_path = new NewInstanceStub(klass_reg, dst, klass, info, Runtime1::new_instance_id);
+#ifndef MIPS64
     __ branch(lir_cond_always, T_ILLEGAL, slow_path);
     __ branch_destination(slow_path->continuation());
+#else
+    __ branch(lir_cond_always, LIR_OprFact::illegalOpr,  LIR_OprFact::illegalOpr, T_ILLEGAL, slow_path);
+    __ branch_destination(slow_path->continuation());
+#endif
   }
 }
 
@@ -933,7 +992,7 @@ LIR_Opr LIRGenerator::force_to_spill(LIR_Opr value, BasicType t) {
   __ move(value, tmp);
   return tmp;
 }
-
+#ifndef MIPS64
 void LIRGenerator::profile_branch(If* if_instr, If::Condition cond) {
   if (if_instr->should_profile()) {
     ciMethod* method = if_instr->profiled_method();
@@ -970,6 +1029,55 @@ void LIRGenerator::profile_branch(If* if_instr, If::Condition cond) {
     __ move(data_reg, data_addr);
   }
 }
+#else
+void LIRGenerator::profile_branch(If* if_instr, If::Condition cond , LIR_Opr left, LIR_Opr right) {
+        if (if_instr->should_profile()) {
+                ciMethod* method = if_instr->profiled_method();
+                assert(method != NULL, "method should be set if branch is profiled");
+                ciMethodData* md = method->method_data_or_null();
+                if (md == NULL) {
+                        bailout("out of memory building methodDataOop");
+                        return;
+                }
+                ciProfileData* data = md->bci_to_data(if_instr->profiled_bci());
+                assert(data != NULL, "must have profiling data");
+                assert(data->is_BranchData(), "need BranchData for two-way branches");
+                int taken_count_offset     = md->byte_offset_of_slot(data, BranchData::taken_offset());
+                int not_taken_count_offset = md->byte_offset_of_slot(data, BranchData::not_taken_offset());
+                if (if_instr->is_swapped()) {
+                 int t = taken_count_offset;
+                 taken_count_offset = not_taken_count_offset;
+                 not_taken_count_offset = t; 
+                }
+                LIR_Opr md_reg = new_register(T_METADATA);
+                __ metadata2reg(md->constant_encoding(), md_reg);
+                //__ move(LIR_OprFact::oopConst(md->constant_encoding()), md_reg);
+                LIR_Opr data_offset_reg = new_pointer_register();
+
+                LIR_Opr opr1 =  LIR_OprFact::intConst(taken_count_offset);
+                LIR_Opr opr2 =  LIR_OprFact::intConst(not_taken_count_offset);
+                LabelObj* skip = new LabelObj();
+
+                __ move(opr1, data_offset_reg);
+                __ branch( lir_cond(cond), left, right, skip->label());
+                __ move(opr2, data_offset_reg);
+                __ branch_destination(skip->label());
+
+                LIR_Opr data_reg = new_pointer_register();
+                LIR_Opr tmp_reg = new_pointer_register();
+                // LIR_Address* data_addr = new LIR_Address(md_reg, data_offset_reg, T_INT);
+                                __ move(data_offset_reg, tmp_reg);
+                __ add(tmp_reg, md_reg, tmp_reg);
+                LIR_Address* data_addr = new LIR_Address(tmp_reg, 0, T_INT);
+                __ move(LIR_OprFact::address(data_addr), data_reg);
+                LIR_Address* fake_incr_value = new LIR_Address(data_reg, DataLayout::counter_increment, T_INT);
+                // Use leal instead of add to avoid destroying condition codes on x86
+                                __ leal(LIR_OprFact::address(fake_incr_value), data_reg);
+                __ move(data_reg, LIR_OprFact::address(data_addr));
+        }
+}
+
+#endif
 
 // Phi technique:
 // This is about passing live values from one basic block to the other.
@@ -1096,6 +1204,35 @@ ciObject* LIRGenerator::get_jobject_constant(Value value) {
   }
   return NULL;
 }
+#ifdef MIPS64
+void LIRGenerator::write_barrier(LIR_Opr addr) {
+        if (addr->is_address()) {
+        LIR_Address* address = (LIR_Address*)addr;
+        LIR_Opr ptr = new_register(T_OBJECT);
+        if (!address->index()->is_valid() && address->disp() == 0) {
+                __ move(address->base(), ptr);
+        } else {
+                __ leal(addr, ptr);
+        }
+                addr = ptr;
+        }
+        assert(addr->is_register(), "must be a register at this point");
+
+        LIR_Opr tmp = new_pointer_register();
+        if (TwoOperandLIRForm) {
+                __ move(addr, tmp);
+                __ unsigned_shift_right(tmp, CardTableModRefBS::card_shift, tmp);
+        } else {
+                __ unsigned_shift_right(addr, CardTableModRefBS::card_shift, tmp);
+        }
+        if (can_inline_as_constant(card_table_base())) {
+                __ move(LIR_OprFact::intConst(0), new LIR_Address(tmp, card_table_base()->as_jint(), T_BYTE));
+        } else {
+                __ add(tmp, load_constant(card_table_base()), tmp);
+                __ move(LIR_OprFact::intConst(0), new LIR_Address(tmp, 0, T_BYTE));
+        }
+}
+#endif
 
 
 void LIRGenerator::do_ExceptionObject(ExceptionObject* x) {
@@ -1481,7 +1618,9 @@ void LIRGenerator::G1SATBCardTableModRef_pre_barrier(LIR_Opr addr_opr, LIR_Opr p
   // Read the marking-in-progress flag.
   LIR_Opr flag_val = new_register(T_INT);
   __ load(mark_active_flag_addr, flag_val);
+#ifndef MIPS64
   __ cmp(lir_cond_notEqual, flag_val, LIR_OprFact::intConst(0));
+#endif
 
   LIR_PatchCode pre_val_patch_code = lir_patch_none;
 
@@ -1510,7 +1649,11 @@ void LIRGenerator::G1SATBCardTableModRef_pre_barrier(LIR_Opr addr_opr, LIR_Opr p
     slow = new G1PreBarrierStub(pre_val);
   }
 
+#ifndef MIPS64
   __ branch(lir_cond_notEqual, T_INT, slow);
+#else
+  __ branch(lir_cond_notEqual, flag_val, LIR_OprFact::intConst(0), T_INT, slow);
+#endif
   __ branch_destination(slow->continuation());
 }
 
@@ -1568,10 +1711,16 @@ void LIRGenerator::G1SATBCardTableModRef_post_barrier(LIR_OprDesc* addr, LIR_Opr
   }
   assert(new_val->is_register(), "must be a register at this point");
 
+#ifndef MIPS64
   __ cmp(lir_cond_notEqual, xor_shift_res, LIR_OprFact::intptrConst(NULL_WORD));
 
+#endif
   CodeStub* slow = new G1PostBarrierStub(addr, new_val);
+#ifndef MIPS64
   __ branch(lir_cond_notEqual, LP64_ONLY(T_LONG) NOT_LP64(T_INT), slow);
+#else
+  __ branch(lir_cond_notEqual, xor_shift_res, LIR_OprFact::intptrConst((intptr_t)NULL_WORD), LP64_ONLY(T_LONG) NOT_LP64(T_INT), slow);
+#endif
   __ branch_destination(slow->continuation());
 }
 
@@ -1611,9 +1760,16 @@ void LIRGenerator::CardTableModRef_post_barrier(LIR_OprDesc* addr, LIR_OprDesc* 
     __ move(LIR_OprFact::intConst(0),
               new LIR_Address(tmp, card_table_base->as_jint(), T_BYTE));
   } else {
+#ifndef MIPS64
     __ move(LIR_OprFact::intConst(0),
               new LIR_Address(tmp, load_constant(card_table_base),
                               T_BYTE));
+#else
+    __ add(tmp, load_constant(card_table_base), tmp);
+    __ move(LIR_OprFact::intConst(0),
+              new LIR_Address(tmp, 0,
+                              T_BYTE));
+#endif
   }
 #endif
 }
@@ -1832,12 +1988,29 @@ void LIRGenerator::do_NIOCheckIndex(Intrinsic* x) {
     CodeEmitInfo* info = state_for(x);
     CodeStub* stub = new RangeCheckStub(info, index.result(), true);
     if (index.result()->is_constant()) {
+#ifndef MIPS64
       cmp_mem_int(lir_cond_belowEqual, buf.result(), java_nio_Buffer::limit_offset(), index.result()->as_jint(), info);
       __ branch(lir_cond_belowEqual, T_INT, stub);
+#else
+            LIR_Opr left = LIR_OprFact::address(new LIR_Address( buf.result(),
+                                                java_nio_Buffer::limit_offset(),T_INT));
+        LIR_Opr right = LIR_OprFact::intConst(index.result()->as_jint());
+      __ null_check_for_branch(lir_cond_belowEqual, left, right, info);
+            __ branch(lir_cond_belowEqual,left, right ,T_INT, stub); // forward branch
+
+#endif
     } else {
+#ifndef MIPS64
       cmp_reg_mem(lir_cond_aboveEqual, index.result(), buf.result(),
                   java_nio_Buffer::limit_offset(), T_INT, info);
       __ branch(lir_cond_aboveEqual, T_INT, stub);
+#else
+            LIR_Opr right = LIR_OprFact::address(new LIR_Address( buf.result(), java_nio_Buffer::limit_offset(),T_INT));
+            LIR_Opr left =  index.result();
+      __ null_check_for_branch(lir_cond_aboveEqual, left, right, info);
+            __ branch(lir_cond_aboveEqual, left, right , T_INT, stub); // forward branch
+#endif
+
     }
     __ move(index.result(), result);
   } else {
@@ -1914,12 +2087,21 @@ void LIRGenerator::do_LoadIndexed(LoadIndexed* x) {
 
   if (GenerateRangeChecks && needs_range_check) {
     if (StressLoopInvariantCodeMotion && range_check_info->deoptimize_on_exception()) {
+#ifndef MIPS64
       __ branch(lir_cond_always, T_ILLEGAL, new RangeCheckStub(range_check_info, index.result()));
+#else
+     tty->print_cr("LIRGenerator::do_LoadIndexed(LoadIndexed* x) unimplemented yet!");
+     Unimplemented();
+#endif
     } else if (use_length) {
       // TODO: use a (modified) version of array_range_check that does not require a
       //       constant length to be loaded to a register
+#ifndef MIPS64
       __ cmp(lir_cond_belowEqual, length.result(), index.result());
       __ branch(lir_cond_belowEqual, T_INT, new RangeCheckStub(range_check_info, index.result()));
+#else
+      __ branch(lir_cond_belowEqual, length.result(), index.result(),T_INT, new RangeCheckStub(range_check_info, index.result()));
+#endif
     } else {
       array_range_check(array.result(), index.result(), null_check_info, range_check_info);
       // The range check performs the null check, so clear it out for the load
@@ -2107,7 +2289,19 @@ void LIRGenerator::do_UnsafeGetRaw(UnsafeGetRaw* x) {
     addr = generate_address(base_op, index_op, log2_scale, 0, dst_type);
 #else
     if (index_op->is_illegal() || log2_scale == 0) {
+#ifndef MIPS64
       addr = new LIR_Address(base_op, index_op, dst_type);
+#else
+   #ifdef _LP64
+      LIR_Opr ptr = new_register(T_LONG);
+   #else
+      LIR_Opr ptr = new_register(T_INT);
+   #endif
+      __ move(base_op, ptr);
+      if(index_op -> is_valid())
+         __ add(ptr, index_op, ptr);
+      addr = new LIR_Address(ptr, 0, dst_type);
+#endif
     } else {
       LIR_Opr tmp = new_pointer_register();
       __ shift_left(index_op, log2_scale, tmp);
@@ -2317,14 +2511,22 @@ void LIRGenerator::do_UnsafeGetObject(UnsafeGetObject* x) {
           referent_off = new_register(T_LONG);
           __ move(LIR_OprFact::longConst(java_lang_ref_Reference::referent_offset), referent_off);
         }
+#ifndef MIPS64
         __ cmp(lir_cond_notEqual, off.result(), referent_off);
         __ branch(lir_cond_notEqual, as_BasicType(off.type()), Lcont->label());
+#else
+        __ branch(lir_cond_notEqual, off.result(), referent_off,  Lcont->label());
+#endif
       }
       if (gen_source_check) {
         // offset is a const and equals referent offset
         // if (source == null) -> continue
+#ifndef MIPS64
         __ cmp(lir_cond_equal, src.result(), LIR_OprFact::oopConst(NULL));
         __ branch(lir_cond_equal, T_OBJECT, Lcont->label());
+#else
+        __ branch(lir_cond_equal, src.result(), LIR_OprFact::oopConst(NULL),  Lcont->label());
+#endif
       }
       LIR_Opr src_klass = new_register(T_OBJECT);
       if (gen_type_check) {
@@ -2334,8 +2536,12 @@ void LIRGenerator::do_UnsafeGetObject(UnsafeGetObject* x) {
         LIR_Address* reference_type_addr = new LIR_Address(src_klass, in_bytes(InstanceKlass::reference_type_offset()), T_BYTE);
         LIR_Opr reference_type = new_register(T_INT);
         __ move(reference_type_addr, reference_type);
+#ifndef MIPS64
         __ cmp(lir_cond_equal, reference_type, LIR_OprFact::intConst(REF_NONE));
         __ branch(lir_cond_equal, T_INT, Lcont->label());
+#else
+        __ branch(lir_cond_equal, reference_type, LIR_OprFact::intConst(REF_NONE),  Lcont->label());
+#endif
       }
       {
         // We have determined that src->_klass->_reference_type != REF_NONE
@@ -2415,20 +2621,36 @@ void LIRGenerator::do_SwitchRanges(SwitchRangeArray* x, LIR_Opr value, BlockBegi
     int high_key = one_range->high_key();
     BlockBegin* dest = one_range->sux();
     if (low_key == high_key) {
+#ifndef MIPS64
       __ cmp(lir_cond_equal, value, low_key);
       __ branch(lir_cond_equal, T_INT, dest);
+#else
+      __ branch(lir_cond_equal, value, LIR_OprFact::intConst(low_key), T_INT, dest);
+#endif
     } else if (high_key - low_key == 1) {
+#ifndef MIPS64
       __ cmp(lir_cond_equal, value, low_key);
       __ branch(lir_cond_equal, T_INT, dest);
       __ cmp(lir_cond_equal, value, high_key);
       __ branch(lir_cond_equal, T_INT, dest);
+#else
+      __ branch(lir_cond_equal, value, LIR_OprFact::intConst(low_key), T_INT, dest);
+      __ branch(lir_cond_equal, value, LIR_OprFact::intConst(high_key), T_INT, dest);
+
+#endif
     } else {
       LabelObj* L = new LabelObj();
+#ifndef MIPS64
       __ cmp(lir_cond_less, value, low_key);
       __ branch(lir_cond_less, T_INT, L->label());
       __ cmp(lir_cond_lessEqual, value, high_key);
       __ branch(lir_cond_lessEqual, T_INT, dest);
       __ branch_destination(L->label());
+#else
+      __ branch(lir_cond_less, value, LIR_OprFact::intConst(low_key), L->label());
+      __ branch(lir_cond_lessEqual, value, LIR_OprFact::intConst(high_key), T_INT, dest);
+      __ branch_destination(L->label());
+#endif
     }
   }
   __ jump(default_sux);
@@ -2514,8 +2736,12 @@ void LIRGenerator::do_TableSwitch(TableSwitch* x) {
     do_SwitchRanges(create_lookup_ranges(x), value, x->default_sux());
   } else {
     for (int i = 0; i < len; i++) {
+#ifndef MIPS64
       __ cmp(lir_cond_equal, value, i + lo_key);
       __ branch(lir_cond_equal, T_INT, x->sux_at(i));
+#else
+      __ branch(lir_cond_equal, value, LIR_OprFact::intConst(i+lo_key), T_INT, x->sux_at(i));
+#endif
     }
     __ jump(x->default_sux());
   }
@@ -2540,8 +2766,12 @@ void LIRGenerator::do_LookupSwitch(LookupSwitch* x) {
   } else {
     int len = x->length();
     for (int i = 0; i < len; i++) {
+#ifndef MIPS64
       __ cmp(lir_cond_equal, value, x->key_at(i));
       __ branch(lir_cond_equal, T_INT, x->sux_at(i));
+#else
+      __ branch(lir_cond_equal, value, LIR_OprFact::intConst(x->key_at(i)), T_INT, x->sux_at(i));
+#endif
     }
     __ jump(x->default_sux());
   }
@@ -3046,9 +3276,18 @@ void LIRGenerator::do_IfOp(IfOp* x) {
   t_val.dont_load_item();
   f_val.dont_load_item();
   LIR_Opr reg = rlock_result(x);
-
+#ifndef MIPS64
   __ cmp(lir_cond(x->cond()), left.result(), right.result());
   __ cmove(lir_cond(x->cond()), t_val.result(), f_val.result(), reg, as_BasicType(x->x()->type()));
+#else
+  LIR_Opr opr1 =  t_val.result();
+  LIR_Opr opr2 =  f_val.result();
+  LabelObj* skip = new LabelObj();
+  __ move(opr1, reg);
+  __ branch(lir_cond(x->cond()), left.result(), right.result(), skip->label());
+  __ move(opr2, reg);
+  __ branch_destination(skip->label());
+#endif
 }
 
 void LIRGenerator::do_RuntimeCall(address routine, int expected_arguments, Intrinsic* x) {
@@ -3399,10 +3638,16 @@ void LIRGenerator::increment_event_counter_impl(CodeEmitInfo* info,
     LIR_Opr meth = new_register(T_METADATA);
     __ metadata2reg(method->constant_encoding(), meth);
     __ logical_and(result, mask, result);
+#ifndef MIPS64
     __ cmp(lir_cond_equal, result, LIR_OprFact::intConst(0));
+#endif
     // The bci for info can point to cmp for if's we want the if bci
     CodeStub* overflow = new CounterOverflowStub(info, bci, meth);
+#ifndef MIPS64
     __ branch(lir_cond_equal, T_INT, overflow);
+#else
+    __ branch(lir_cond_equal, result, LIR_OprFact::intConst(0), T_INT, overflow);
+#endif
     __ branch_destination(overflow->continuation());
   }
 }
@@ -3514,8 +3759,13 @@ void LIRGenerator::do_RangeCheckPredicate(RangeCheckPredicate *x) {
     CodeEmitInfo *info = state_for(x, x->state());
     CodeStub* stub = new PredicateFailedStub(info);
 
+#ifndef MIPS64
     __ cmp(lir_cond(cond), left, right);
     __ branch(lir_cond(cond), right->type(), stub);
+#else
+    tty->print_cr("LIRGenerator::do_RangeCheckPredicate(RangeCheckPredicate *x) unimplemented yet!");
+    Unimplemented();
+#endif
   }
 }
 

@@ -22,6 +22,12 @@
 #  
 #
 
+#
+# This file has been modified by Loongson Technology in 2015. These
+# modifications are Copyright (c) 2015 Loongson Technology, and are made
+# available on the same license terms set forth above.
+#
+
 # This makefile (sa.make) is included from the sa.make in the
 # build directories.
 
@@ -108,6 +114,7 @@ $(GENERATED)/sa-jdi.jar:: $(AGENT_FILES)
 	$(QUIETLY) $(REMOTE) $(RUN.JAR) uf $@ -C $(AGENT_SRC_DIR) META-INF/services/com.sun.jdi.connect.Connector
 	$(QUIETLY) $(REMOTE) $(RUN.JAVAH) -classpath $(SA_CLASSDIR) -d $(GENERATED) -jni sun.jvm.hotspot.debugger.x86.X86ThreadContext
 	$(QUIETLY) $(REMOTE) $(RUN.JAVAH) -classpath $(SA_CLASSDIR) -d $(GENERATED) -jni sun.jvm.hotspot.debugger.amd64.AMD64ThreadContext
+	$(QUIETLY) $(REMOTE) $(RUN.JAVAH) -classpath $(SA_CLASSDIR) -d $(GENERATED) -jni sun.jvm.hotspot.debugger.mips.MIPSThreadContext
 	$(QUIETLY) $(REMOTE) $(RUN.JAVAH) -classpath $(SA_CLASSDIR) -d $(GENERATED) -jni sun.jvm.hotspot.debugger.sparc.SPARCThreadContext
 	$(QUIETLY) $(REMOTE) $(RUN.JAVAH) -classpath $(SA_CLASSDIR) -d $(GENERATED) -jni sun.jvm.hotspot.asm.Disassembler
 

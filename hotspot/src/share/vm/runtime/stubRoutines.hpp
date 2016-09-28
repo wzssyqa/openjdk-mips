@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_VM_RUNTIME_STUBROUTINES_HPP
 #define SHARE_VM_RUNTIME_STUBROUTINES_HPP
 
@@ -45,6 +51,9 @@
 #endif
 #ifdef TARGET_ARCH_ppc
 # include "nativeInst_ppc.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "nativeInst_mips.hpp"
 #endif
 
 // StubRoutines provides entry points to assembly routines used by
@@ -111,6 +120,10 @@ class StubRoutines: AllStatic {
 # include "stubRoutines_zero.hpp"
 #elif defined TARGET_ARCH_MODEL_ppc_64
 # include "stubRoutines_ppc_64.hpp"
+#elif defined TARGET_ARCH_MODEL_mips_64
+# include "stubRoutines_mips_64.hpp"
+#elif defined TARGET_ARCH_MODEL_mips_32
+# include "stubRoutines_mips_32.hpp"
 #endif
 
   static jint    _verify_oop_count;

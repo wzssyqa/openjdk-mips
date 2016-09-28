@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #include <jni.h>
 #include "libproc.h"
 
@@ -47,6 +53,10 @@
 
 #if defined(sparc) || defined(sparcv9)
 #include "sun_jvm_hotspot_debugger_sparc_SPARCThreadContext.h"
+#endif
+
+#if defined(mipsel) || defined(mips)
+#include "sun_jvm_hotspot_debugger_mips_MIPSThreadContext.h"
 #endif
 
 static jfieldID p_ps_prochandle_ID = 0;
@@ -358,6 +368,9 @@ JNIEXPORT jlongArray JNICALL Java_sun_jvm_hotspot_debugger_linux_LinuxDebuggerLo
 #if defined(sparc) || defined(sparcv9)
 #define NPRGREG sun_jvm_hotspot_debugger_sparc_SPARCThreadContext_NPRGREG
 #endif
+#if defined(mips) || defined(mipsel)
+#define NPRGREG sun_jvm_hotspot_debugger_mips_MIPSThreadContext_NPRGREG
+#endif
 
   array = (*env)->NewLongArray(env, NPRGREG);
   CHECK_EXCEPTION_(0);
@@ -450,6 +463,44 @@ JNIEXPORT jlongArray JNICALL Java_sun_jvm_hotspot_debugger_linux_LinuxDebuggerLo
   regs[REG_INDEX(R_O7)]  = gregs.u_regs[14];
 #endif /* sparc */
 
+#if defined(mips) || defined(mipsel)
+
+#define REG_INDEX(reg) sun_jvm_hotspot_debugger_mips_MIPSThreadContext_##reg
+
+  regs[REG_INDEX(ZERO)]  = gregs.regs[0];
+  regs[REG_INDEX(AT)]  = gregs.regs[1];
+  regs[REG_INDEX(V0)]  = gregs.regs[2];
+  regs[REG_INDEX(V1)]  = gregs.regs[3];
+  regs[REG_INDEX(A0)]  = gregs.regs[4];
+  regs[REG_INDEX(A1)]  = gregs.regs[5];
+  regs[REG_INDEX(A2)]  = gregs.regs[6];
+  regs[REG_INDEX(A3)]  = gregs.regs[7];
+  regs[REG_INDEX(T0)]  = gregs.regs[8];
+  regs[REG_INDEX(T1)]  = gregs.regs[9];
+  regs[REG_INDEX(T2)]  = gregs.regs[10];
+  regs[REG_INDEX(T3)]  = gregs.regs[11];
+  regs[REG_INDEX(T4)]  = gregs.regs[12];
+  regs[REG_INDEX(T5)]  = gregs.regs[13];
+  regs[REG_INDEX(T6)]  = gregs.regs[14];
+  regs[REG_INDEX(T7)]  = gregs.regs[15];
+  regs[REG_INDEX(S0)]  = gregs.regs[16];
+  regs[REG_INDEX(S1)]  = gregs.regs[17];
+  regs[REG_INDEX(S2)]  = gregs.regs[18];
+  regs[REG_INDEX(S3)]  = gregs.regs[19];
+  regs[REG_INDEX(S4)]  = gregs.regs[20];
+  regs[REG_INDEX(S5)]  = gregs.regs[21];
+  regs[REG_INDEX(S6)]  = gregs.regs[22];
+  regs[REG_INDEX(S7)]  = gregs.regs[23];
+  regs[REG_INDEX(T8)]  = gregs.regs[24];
+  regs[REG_INDEX(T9)]  = gregs.regs[25];
+  regs[REG_INDEX(K0)]  = gregs.regs[26];
+  regs[REG_INDEX(K1)]  = gregs.regs[27];
+  regs[REG_INDEX(GP)]  = gregs.regs[28];
+  regs[REG_INDEX(SP)]  = gregs.regs[29];
+  regs[REG_INDEX(FP)]  = gregs.regs[30];
+  regs[REG_INDEX(S8)]  = gregs.regs[30];
+  regs[REG_INDEX(RA)]  = gregs.regs[31];
+#endif /* mips */
 
   (*env)->ReleaseLongArrayElements(env, array, regs, JNI_COMMIT);
   return array;

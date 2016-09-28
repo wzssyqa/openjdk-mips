@@ -832,6 +832,9 @@ class os: AllStatic {
 #ifdef TARGET_OS_ARCH_linux_ppc
 # include "os_linux_ppc.hpp"
 #endif
+#ifdef TARGET_OS_ARCH_linux_mips
+# include "os_linux_mips.hpp"
+#endif
 #ifdef TARGET_OS_ARCH_aix_ppc
 # include "os_aix_ppc.hpp"
 #endif

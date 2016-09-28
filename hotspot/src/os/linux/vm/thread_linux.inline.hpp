@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef OS_LINUX_VM_THREAD_LINUX_INLINE_HPP
 #define OS_LINUX_VM_THREAD_LINUX_INLINE_HPP
 

@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_VM_RUNTIME_JAVACALLS_HPP
 #define SHARE_VM_RUNTIME_JAVACALLS_HPP
 
@@ -45,6 +51,9 @@
 #endif
 #ifdef TARGET_ARCH_ppc
 # include "jniTypes_ppc.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "jniTypes_mips.hpp"
 #endif
 
 // A JavaCallWrapper is constructed before each JavaCall and destructed after the call.

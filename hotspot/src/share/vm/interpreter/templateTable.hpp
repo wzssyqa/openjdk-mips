@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_VM_INTERPRETER_TEMPLATETABLE_HPP
 #define SHARE_VM_INTERPRETER_TEMPLATETABLE_HPP
 
@@ -38,6 +44,10 @@
 # include "interp_masm_zero.hpp"
 #elif defined TARGET_ARCH_MODEL_ppc_64
 # include "interp_masm_ppc_64.hpp"
+#elif defined TARGET_ARCH_MODEL_mips_32
+# include "interp_masm_mips_32.hpp"
+#elif defined TARGET_ARCH_MODEL_mips_64
+# include "interp_masm_mips_64.hpp"
 #endif
 
 #ifndef CC_INTERP
@@ -363,6 +373,10 @@ class TemplateTable: AllStatic {
 # include "templateTable_zero.hpp"
 #elif defined TARGET_ARCH_MODEL_ppc_64
 # include "templateTable_ppc_64.hpp"
+#elif defined TARGET_ARCH_MODEL_mips_32
+# include "templateTable_mips_32.hpp"
+#elif defined TARGET_ARCH_MODEL_mips_64
+# include "templateTable_mips_64.hpp"
 #endif
 
 };

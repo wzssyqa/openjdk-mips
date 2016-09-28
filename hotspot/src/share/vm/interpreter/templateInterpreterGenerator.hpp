@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_VM_INTERPRETER_TEMPLATEINTERPRETERGENERATOR_HPP
 #define SHARE_VM_INTERPRETER_TEMPLATEINTERPRETERGENERATOR_HPP
 
@@ -88,6 +94,9 @@ class TemplateInterpreterGenerator: public AbstractInterpreterGenerator {
 
 #ifdef TARGET_ARCH_x86
 # include "templateInterpreterGenerator_x86.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "templateInterpreterGenerator_mips.hpp"
 #endif
 #ifdef TARGET_ARCH_sparc
 # include "templateInterpreterGenerator_sparc.hpp"

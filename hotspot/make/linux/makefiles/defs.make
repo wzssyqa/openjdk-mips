@@ -114,6 +114,21 @@ ifneq (,$(findstring $(ARCH), ppc ppc64))
   HS_ARCH = ppc
 endif
 
+# mips
+ifneq (,$(findstring mips, $(ARCH)))
+  ifeq ($(ARCH_DATA_MODEL), 64)
+    MAKE_ARGS        += LP64=1
+    PLATFORM         = linux-mips64
+    VM_PLATFORM      = linux_mips64
+  else
+    ARCH_DATA_MODEL  = 32
+    PLATFORM         = linux-mips
+    VM_PLATFORM      = linux_mips
+  endif
+  HS_ARCH = ppc
+endif
+
+
 # On 32 bit linux we build server and client, on 64 bit just server.
 ifeq ($(JVM_VARIANTS),)
   ifeq ($(ARCH_DATA_MODEL), 32)

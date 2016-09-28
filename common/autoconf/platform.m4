@@ -96,6 +96,30 @@ AC_DEFUN([PLATFORM_EXTRACT_VARS_FROM_CPU],
       VAR_CPU_BITS=64
       VAR_CPU_ENDIAN=big
       ;;
+    mips)
+      VAR_CPU=mips
+      VAR_CPU_ARCH=mips
+      VAR_CPU_BITS=32
+      VAR_CPU_ENDIAN=big
+      ;;
+    mipsel)
+      VAR_CPU=mipsel
+      VAR_CPU_ARCH=mips
+      VAR_CPU_BITS=32
+      VAR_CPU_ENDIAN=little
+      ;;
+    mips64)
+      VAR_CPU=mips64
+      VAR_CPU_ARCH=mips
+      VAR_CPU_BITS=64
+      VAR_CPU_ENDIAN=big
+      ;;
+    mips64el)
+      VAR_CPU=mips64el
+      VAR_CPU_ARCH=mips
+      VAR_CPU_BITS=64
+      VAR_CPU_ENDIAN=little
+      ;;
     *)
       AC_MSG_ERROR([unsupported cpu $1])
       ;;
@@ -242,8 +266,10 @@ AC_DEFUN([PLATFORM_SETUP_TARGET_CPU_BITS],
         OPENJDK_TARGET_CPU=x86
       elif test "x$OPENJDK_TARGET_CPU_ARCH" = "xsparc"; then
         OPENJDK_TARGET_CPU=sparc
+      elif test "x$OPENJDK_TARGET_CPU_ARCH" = "xmips"; then
+        OPENJDK_TARGET_CPU=mips
       else
-        AC_MSG_ERROR([Reduced build (--with-target-bits=32) is only supported on x86_64 and sparcv9])
+        AC_MSG_ERROR([Reduced build (--with-target-bits=32) is only supported on x86_64, sparcv9 and mips64])
       fi
     elif test "x$with_target_bits" = x64 && test "x$OPENJDK_TARGET_CPU_BITS" = x32; then
       AC_MSG_ERROR([It is not possible to use --with-target-bits=64 on a 32 bit system. Use proper cross-compilation instead.])
@@ -377,6 +403,8 @@ AC_DEFUN([PLATFORM_SETUP_LEGACY_VARS],
     sparc*)  ZERO_ARCHDEF=SPARC ;;
     x86_64*) ZERO_ARCHDEF=AMD64 ;;
     x86)     ZERO_ARCHDEF=IA32  ;;
+    mips|mipsel)         ZERO_ARCHDEF=MIPS32  ;;
+    mips64|mips64el)     ZERO_ARCHDEF=MIPS64  ;;
     *)      ZERO_ARCHDEF=$(echo "${OPENJDK_TARGET_CPU_LEGACY_LIB}" | tr a-z A-Z)
   esac
   AC_SUBST(ZERO_ARCHDEF)

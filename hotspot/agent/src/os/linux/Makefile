@@ -22,7 +22,23 @@
 #  
 #
 
-ARCH := $(shell if ([ `uname -m` = "ia64" ])  ; then echo ia64 ; elif ([ `uname -m` = "x86_64" ]) ; then echo amd64; elif ([ `uname -m` = "sparc64" ]) ; then echo sparc; else echo i386 ; fi )
+#
+# This file has been modified by Loongson Technology in 2015. These
+# modifications are Copyright (c) 2015 Loongson Technology, and are made
+# available on the same license terms set forth above.
+#
+
+ARCH := $(shell if ([ `uname -m` = "ia64" ])  ; then \
+	            echo ia64 ; \
+		elif ([ -n "`uname -m | grep '^mips'`" ]) ; then \
+		    echo mips ; \
+		elif ([ `uname -m` = "x86_64" ]) ; then \
+		    echo amd64; \
+		elif ([ `uname -m` = "sparc64" ]) ; then \
+		    echo sparc; \
+		else \
+		    echo i386 ; \
+		fi )
 GCC      = gcc
 
 JAVAH    = ${JAVA_HOME}/bin/javah

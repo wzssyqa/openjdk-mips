@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_VM_ASM_MACROASSEMBLER_HPP
 #define SHARE_VM_ASM_MACROASSEMBLER_HPP
 
@@ -29,6 +35,9 @@
 
 #ifdef TARGET_ARCH_x86
 # include "macroAssembler_x86.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "macroAssembler_mips.hpp"
 #endif
 #ifdef TARGET_ARCH_sparc
 # include "macroAssembler_sparc.hpp"
@@ -42,5 +51,4 @@
 #ifdef TARGET_ARCH_ppc
 # include "macroAssembler_ppc.hpp"
 #endif
-
 #endif // SHARE_VM_ASM_MACROASSEMBLER_HPP

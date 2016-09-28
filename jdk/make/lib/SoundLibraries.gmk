@@ -139,6 +139,14 @@ else
   ifeq ($(OPENJDK_TARGET_CPU), ppc64)
        LIBJSOUND_CFLAGS += -DX_ARCH=X_PPC64
   endif
+  
+  ifeq ($(OPENJDK_TARGET_CPU), mips)
+    LIBJSOUND_CFLAGS += -DX_ARCH=X_ZERO
+  endif
+
+  ifeq ($(OPENJDK_TARGET_CPU), mips64)
+    LIBJSOUND_CFLAGS += -DX_ARCH=X_ZERO
+  endif
 endif
 
 LIBJSOUND_CFLAGS += -DEXTRA_SOUND_JNI_LIBS='"$(EXTRA_SOUND_JNI_LIBS)"'

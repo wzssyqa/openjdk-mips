@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_VM_RUNTIME_ICACHE_HPP
 #define SHARE_VM_RUNTIME_ICACHE_HPP
 
@@ -83,7 +89,9 @@ class AbstractICache : AllStatic {
 #ifdef TARGET_ARCH_ppc
 # include "icache_ppc.hpp"
 #endif
-
+#ifdef TARGET_ARCH_mips
+# include "icache_mips.hpp"
+#endif
 
 
 class ICacheStubGenerator : public StubCodeGenerator {

@@ -22,10 +22,17 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_VM_COMPILER_DISASSEMBLER_HPP
 #define SHARE_VM_COMPILER_DISASSEMBLER_HPP
 
 #include "asm/codeBuffer.hpp"
+#include "compiler/disassemblerEnv.hpp"
 #include "runtime/globals.hpp"
 #ifdef TARGET_OS_FAMILY_linux
 # include "os_linux.inline.hpp"
@@ -45,6 +52,9 @@
 
 class decode_env;
 
+#ifdef MIPS64
+ # include "disassembler_mips.hpp"
+#else
 // The disassembler prints out assembly code annotated
 // with Java specific information.
 
@@ -105,5 +115,7 @@ class Disassembler {
   static void decode(nmethod* nm,                outputStream* st = NULL);
   static void decode(address begin, address end, outputStream* st = NULL, CodeStrings c = CodeStrings());
 };
+
+#endif //MIPS64 has its own disassembler implements. 2013/02/25
 
 #endif // SHARE_VM_COMPILER_DISASSEMBLER_HPP

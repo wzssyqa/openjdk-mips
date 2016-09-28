@@ -52,6 +52,9 @@
 #ifdef TARGET_ARCH_ppc
 # include "globals_ppc.hpp"
 #endif
+#ifdef TARGET_ARCH_mips
+# include "globals_mips.hpp"
+#endif
 #ifdef TARGET_OS_FAMILY_linux
 # include "globals_linux.hpp"
 #endif
@@ -91,6 +94,9 @@
 #ifdef TARGET_OS_ARCH_linux_ppc
 # include "globals_linux_ppc.hpp"
 #endif
+#ifdef TARGET_OS_ARCH_linux_mips
+# include "globals_linux_mips.hpp"
+#endif
 #ifdef TARGET_OS_ARCH_aix_ppc
 # include "globals_aix_ppc.hpp"
 #endif
@@ -112,6 +118,9 @@
 #endif
 #ifdef TARGET_ARCH_ppc
 # include "c1_globals_ppc.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "c1_globals_mips.hpp"
 #endif
 #ifdef TARGET_OS_FAMILY_linux
 # include "c1_globals_linux.hpp"
@@ -141,6 +150,9 @@
 #endif
 #ifdef TARGET_ARCH_ppc
 # include "c2_globals_ppc.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "c2_globals_mips.hpp"
 #endif
 #ifdef TARGET_OS_FAMILY_linux
 # include "c2_globals_linux.hpp"

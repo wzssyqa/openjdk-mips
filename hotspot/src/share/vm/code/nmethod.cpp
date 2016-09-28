@@ -1170,7 +1170,7 @@ void nmethod::cleanup_inline_caches() {
   // not-entrant methods.
   address low_boundary = verified_entry_point();
   if (!is_in_use()) {
-    low_boundary += NativeJump::instruction_size;
+    low_boundary +=  NOT_MIPS64(NativeJump)MIPS64_ONLY(NativeGeneralJump)::instruction_size;
     // %%% Note:  On SPARC we patch only a 4-byte trap, not a full NativeJump.
     // This means that the low_boundary is going to be a little too high.
     // This shouldn't matter, since oops of non-entrant methods are never used.
@@ -1463,7 +1463,7 @@ bool nmethod::make_not_entrant_or_zombie(unsigned int state) {
     // The caller can be calling the method statically or through an inline
     // cache call.
     if (!is_osr_method() && !is_not_entrant()) {
-      NativeJump::patch_verified_entry(entry_point(), verified_entry_point(),
+      NOT_MIPS64(NativeJump)MIPS64_ONLY(NativeGeneralJump)::patch_verified_entry(entry_point(), verified_entry_point(),
                   SharedRuntime::get_handle_wrong_method_stub());
     }
 
@@ -1790,7 +1790,7 @@ void nmethod::do_unloading(BoolObjectClosure* is_alive, bool unloading_occurred)
   // not-entrant methods.
   address low_boundary = verified_entry_point();
   if (is_not_entrant()) {
-    low_boundary += NativeJump::instruction_size;
+    low_boundary +=  NOT_MIPS64(NativeJump)MIPS64_ONLY(NativeGeneralJump)::instruction_size;
     // %%% Note:  On SPARC we patch only a 4-byte trap, not a full NativeJump.
     // (See comment above.)
   }
@@ -1946,7 +1946,7 @@ bool nmethod::do_unloading_parallel(BoolObjectClosure* is_alive, bool unloading_
   // not-entrant methods.
   address low_boundary = verified_entry_point();
   if (is_not_entrant()) {
-    low_boundary += NativeJump::instruction_size;
+    low_boundary +=  NOT_MIPS64(NativeJump)MIPS64_ONLY(NativeGeneralJump)::instruction_size;
     // %%% Note:  On SPARC we patch only a 4-byte trap, not a full NativeJump.
     // (See comment above.)
   }
@@ -2049,7 +2049,7 @@ void nmethod::do_unloading_parallel_postponed(BoolObjectClosure* is_alive, bool 
   // not-entrant methods.
   address low_boundary = verified_entry_point();
   if (is_not_entrant()) {
-    low_boundary += NativeJump::instruction_size;
+    low_boundary +=  NOT_MIPS64(NativeJump)MIPS64_ONLY(NativeGeneralJump)::instruction_size;
     // %%% Note:  On SPARC we patch only a 4-byte trap, not a full NativeJump.
     // (See comment above.)
   }
@@ -2715,7 +2715,7 @@ void nmethod::verify() {
     return;
 
   // Make sure all the entry points are correctly aligned for patching.
-  NativeJump::check_verified_entry_alignment(entry_point(), verified_entry_point());
+  NOT_MIPS64(NativeJump)MIPS64_ONLY(NativeGeneralJump)::check_verified_entry_alignment(entry_point(), verified_entry_point());
 
   // assert(method()->is_oop(), "must be valid");
 

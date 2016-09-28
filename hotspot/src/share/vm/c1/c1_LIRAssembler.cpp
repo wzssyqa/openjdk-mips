@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #include "precompiled.hpp"
 #include "c1/c1_Compilation.hpp"
 #include "c1/c1_Instruction.hpp"
@@ -33,6 +39,10 @@
 #ifdef TARGET_ARCH_x86
 # include "nativeInst_x86.hpp"
 # include "vmreg_x86.inline.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "nativeInst_mips.hpp"
+# include "vmreg_mips.inline.hpp"
 #endif
 #ifdef TARGET_ARCH_sparc
 # include "nativeInst_sparc.hpp"
@@ -179,7 +189,6 @@ bool LIR_Assembler::needs_icache(ciMethod* method) const {
 int LIR_Assembler::code_offset() const {
   return _masm->offset();
 }
-
 
 address LIR_Assembler::pc() const {
   return _masm->pc();
@@ -715,6 +724,7 @@ void LIR_Assembler::emit_op0(LIR_Op0* op) {
 
 void LIR_Assembler::emit_op2(LIR_Op2* op) {
   switch (op->code()) {
+#ifndef MIPS64
     case lir_cmp:
       if (op->info() != NULL) {
         assert(op->in_opr1()->is_address() || op->in_opr2()->is_address(),
@@ -723,6 +733,15 @@ void LIR_Assembler::emit_op2(LIR_Op2* op) {
       }
       comp_op(op->condition(), op->in_opr1(), op->in_opr2(), op);
       break;
+#else
+   case lir_null_check_for_branch:
+        if (op->info() != NULL) {
+                                assert(op->in_opr1()->is_address() || op->in_opr2()->is_address(),
+                                                "shouldn't be codeemitinfo for non-address operands");
+                                add_debug_info_for_null_check_here(op->info()); // exception possible
+                        }
+      break;
+#endif
 
     case lir_cmp_l2i:
     case lir_cmp_fd2i:
@@ -731,7 +750,9 @@ void LIR_Assembler::emit_op2(LIR_Op2* op) {
       break;
 
     case lir_cmove:
+#ifndef MIPS64
       cmove(op->condition(), op->in_opr1(), op->in_opr2(), op->result_opr(), op->type());
+#endif
       break;
 
     case lir_shl:

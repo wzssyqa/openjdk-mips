@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #include "precompiled.hpp"
 #include "compiler/oopMap.hpp"
 #include "opto/addnode.hpp"
@@ -46,6 +52,9 @@
 #endif
 #ifdef TARGET_ARCH_ppc
 # include "vmreg_ppc.inline.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "vmreg_mips.inline.hpp"
 #endif
 
 // The functions in this file builds OopMaps after all scheduling is done.

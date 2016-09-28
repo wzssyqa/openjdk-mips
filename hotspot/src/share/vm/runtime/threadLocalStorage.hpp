@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_VM_RUNTIME_THREADLOCALSTORAGE_HPP
 #define SHARE_VM_RUNTIME_THREADLOCALSTORAGE_HPP
 
@@ -50,6 +56,9 @@ class ThreadLocalStorage : AllStatic {
   // Machine dependent stuff
 #ifdef TARGET_OS_ARCH_linux_x86
 # include "threadLS_linux_x86.hpp"
+#endif
+#ifdef TARGET_OS_ARCH_linux_mips
+# include "threadLS_linux_mips.hpp"
 #endif
 #ifdef TARGET_OS_ARCH_linux_sparc
 # include "threadLS_linux_sparc.hpp"

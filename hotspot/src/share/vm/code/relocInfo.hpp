@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_VM_CODE_RELOCINFO_HPP
 #define SHARE_VM_CODE_RELOCINFO_HPP
 
@@ -261,7 +267,11 @@ class relocInfo VALUE_OBJ_CLASS_SPEC {
     poll_return_type        = 11, // polling instruction for safepoints at return
     metadata_type           = 12, // metadata that used to be oops
     trampoline_stub_type    = 13, // stub-entry for trampoline
+#ifndef MIPS64
     yet_unused_type_1       = 14, // Still unused
+#else
+    internal_pc_type        = 14, // tag for internal data,??
+#endif
     data_prefix_tag         = 15, // tag for a prefix (carries data arguments)
     type_mask               = 15  // A mask which selects only the above values
   };
@@ -302,6 +312,7 @@ class relocInfo VALUE_OBJ_CLASS_SPEC {
     visitor(poll_return) \
     visitor(section_word) \
     visitor(trampoline_stub) \
+    NOT_MIPS64(visitor(section_word)) MIPS64_ONLY(visitor(internal_pc)) \
 
 
  public:
@@ -429,6 +440,9 @@ class relocInfo VALUE_OBJ_CLASS_SPEC {
 #endif
 #ifdef TARGET_ARCH_ppc
 # include "relocInfo_ppc.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "relocInfo_mips.hpp"
 #endif
 
 
@@ -1021,6 +1035,16 @@ class metadata_Relocation : public DataRelocation {
   // Note:  metadata_value transparently converts Universe::non_metadata_word to NULL.
 };
 
+ #ifdef MIPS64
+ // to handle the set_last_java_frame pc
+ class internal_pc_Relocation : public Relocation {
+  relocInfo::relocType type() { return relocInfo::internal_pc_type; }
+  public:
+   address pc() {pd_get_address_from_code();}
+         //void     fix_relocation_at_move(intptr_t delta);
+         void     fix_relocation_after_move(const CodeBuffer* src, CodeBuffer* dest);
+ };
+ #endif
 
 class virtual_call_Relocation : public CallRelocation {
   relocInfo::relocType type() { return relocInfo::virtual_call_type; }

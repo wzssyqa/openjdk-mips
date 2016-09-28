@@ -2277,7 +2277,7 @@ private:
   const char* reg_conversion(const char* rep_var) {
     if (strcmp(rep_var,"$Register") == 0)      return "as_Register";
     if (strcmp(rep_var,"$FloatRegister") == 0) return "as_FloatRegister";
-#if defined(IA32) || defined(AMD64)
+#if defined(IA32) || defined(AMD64) || defined(MIPS64) || defined(MIPS32)
     if (strcmp(rep_var,"$XMMRegister") == 0)   return "as_XMMRegister";
 #endif
     if (strcmp(rep_var,"$CondRegister") == 0)  return "as_ConditionRegister";

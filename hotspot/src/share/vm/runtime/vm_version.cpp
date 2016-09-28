@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #include "precompiled.hpp"
 #include "memory/universe.hpp"
 #include "oops/oop.inline.hpp"
@@ -40,6 +46,9 @@
 #endif
 #ifdef TARGET_ARCH_ppc
 # include "vm_version_ppc.hpp"
+#endif
+#ifdef TARGET_ARCH_mips
+# include "vm_version_mips.hpp"
 #endif
 
 const char* Abstract_VM_Version::_s_vm_release = Abstract_VM_Version::vm_release();
@@ -188,6 +197,8 @@ const char* Abstract_VM_Version::jre_release_version() {
                  IA64_ONLY("ia64")               \
                  AMD64_ONLY("amd64")             \
                  PPC64_ONLY("ppc64")             \
+                 MIPS32_ONLY("mips")             \
+                 MIPS64_ONLY("mips64")           \
                  SPARC_ONLY("sparc")
 #endif // ZERO
 #endif

@@ -60,6 +60,9 @@
 #ifdef TARGET_ARCH_ppc
 # include "bytes_ppc.hpp"
 #endif
+#ifdef TARGET_ARCH_mips
+# include "bytes_mips.hpp"
+#endif
 
 #define NOFAILOVER_MAJOR_VERSION                       51
 #define NONZERO_PADDING_BYTES_IN_SWITCH_MAJOR_VERSION  51

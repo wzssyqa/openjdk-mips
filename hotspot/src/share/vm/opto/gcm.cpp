@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2015. These
+ * modifications are Copyright (c) 2015 Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #include "precompiled.hpp"
 #include "libadt/vectset.hpp"
 #include "memory/allocation.inline.hpp"
@@ -47,6 +53,10 @@
 # include "adfiles/ad_zero.hpp"
 #elif defined TARGET_ARCH_MODEL_ppc_64
 # include "adfiles/ad_ppc_64.hpp"
+#elif defined TARGET_ARCH_MODEL_mips_32
+# include "adfiles/ad_mips_32.hpp"
+#elif defined TARGET_ARCH_MODEL_mips_64
+# include "adfiles/ad_mips_64.hpp"
 #endif
 
 
