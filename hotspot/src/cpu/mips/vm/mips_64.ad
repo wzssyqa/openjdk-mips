@@ -6378,7 +6378,7 @@ instruct branchConI_reg_imm16_sub(cmpOp cmp, mRegI src1, immI16_sub src2, label 
     Label     &L =  *($labl$$label);
     int     flag = $cmp$$cmpcode;
 
-    __ addiu32(AT, op1, -1 * val);
+    __ addiu(AT, op1, -1 * val);
     switch(flag)
     {
       case 0x01: //equal
@@ -6848,12 +6848,12 @@ instruct cmovI_cmpI_reg_reg(mRegI dst, mRegI src, mRegI tmp1, mRegI tmp2, cmpOp 
     switch(flag)
     {
       case 0x01: //equal
-        __ subu32(AT, op1, op2);
+        __ subu(AT, op1, op2);
         __ movz(dst, src, AT);
         break;
 
       case 0x02: //not_equal
-        __ subu32(AT, op1, op2);
+        __ subu(AT, op1, op2);
         __ movn(dst, src, AT);
         break;
 
@@ -6956,12 +6956,12 @@ instruct cmovI_cmpN_reg_reg(mRegI dst, mRegI src, mRegN tmp1, mRegN tmp2, cmpOpU
     switch(flag)
     {
       case 0x01: //equal
-        __ subu32(AT, op1, op2);
+        __ subu(AT, op1, op2);
         __ movz(dst, src, AT);
         break;
 
       case 0x02: //not_equal
-        __ subu32(AT, op1, op2);
+        __ subu(AT, op1, op2);
         __ movn(dst, src, AT);
         break;
 
@@ -7010,12 +7010,12 @@ instruct cmovP_cmpN_reg_reg(mRegP dst, mRegP src, mRegN tmp1, mRegN tmp2, cmpOpU
     switch(flag)
     {
       case 0x01: //equal
-        __ subu32(AT, op1, op2);
+        __ subu(AT, op1, op2);
         __ movz(dst, src, AT);
         break;
 
       case 0x02: //not_equal
-        __ subu32(AT, op1, op2);
+        __ subu(AT, op1, op2);
         __ movn(dst, src, AT);
         break;
 
@@ -7168,12 +7168,12 @@ instruct cmovN_cmpN_reg_reg(mRegN dst, mRegN src, mRegN tmp1, mRegN tmp2, cmpOpU
     switch(flag)
     {
       case 0x01: //equal
-        __ subu32(AT, op1, op2);
+        __ subu(AT, op1, op2);
         __ movz(dst, src, AT);
         break;
 
       case 0x02: //not_equal
-        __ subu32(AT, op1, op2);
+        __ subu(AT, op1, op2);
         __ movn(dst, src, AT);
         break;
 
@@ -7490,12 +7490,12 @@ instruct cmovP_cmpI_reg_reg(mRegP dst, mRegP src, mRegI tmp1, mRegI tmp2, cmpOp 
     switch(flag)
     {
       case 0x01: //equal
-        __ subu32(AT, op1, op2);
+        __ subu(AT, op1, op2);
         __ movz(dst, src, AT);
         break;
 
       case 0x02: //not_equal
-        __ subu32(AT, op1, op2);
+        __ subu(AT, op1, op2);
         __ movn(dst, src, AT);
         break;
 
@@ -7544,12 +7544,12 @@ instruct cmovN_cmpI_reg_reg(mRegN dst, mRegN src, mRegI tmp1, mRegI tmp2, cmpOp 
     switch(flag)
     {
       case 0x01: //equal
-        __ subu32(AT, op1, op2);
+        __ subu(AT, op1, op2);
         __ movz(dst, src, AT);
         break;
 
       case 0x02: //not_equal
-        __ subu32(AT, op1, op2);
+        __ subu(AT, op1, op2);
         __ movn(dst, src, AT);
         break;
 
@@ -7600,12 +7600,12 @@ instruct cmovL_cmpI_reg_reg(mRegL dst, mRegL src, mRegI tmp1, mRegI tmp2, cmpOp 
     switch(flag)
     {
       case 0x01: //equal
-        __ subu32(AT, op1, op2);
+        __ subu(AT, op1, op2);
         __ movz(dst, src, AT);
         break;
 
       case 0x02: //not_equal
-        __ subu32(AT, op1, op2);
+        __ subu(AT, op1, op2);
         __ movn(dst, src, AT);
         break;
 
@@ -7708,12 +7708,12 @@ instruct cmovL_cmpN_reg_reg(mRegL dst, mRegL src, mRegN tmp1, mRegN tmp2, cmpOpU
     switch(flag)
     {
       case 0x01: //equal
-        __ subu32(AT, op1, op2);
+        __ subu(AT, op1, op2);
         __ movz(dst, src, AT);
         break;
 
       case 0x02: //not_equal
-        __ subu32(AT, op1, op2);
+        __ subu(AT, op1, op2);
         __ movn(dst, src, AT);
         break;
 
@@ -8198,9 +8198,9 @@ instruct cmpL3_reg_reg(mRegI dst, mRegL src1, mRegL src2) %{
     __ nop();
 
     __ bgtz(dst, done);
-    __ delayed()->addiu32(dst, R0, 1);
+    __ delayed()->addiu(dst, R0, 1);
 
-    __ addiu32(dst, R0, -1);
+    __ addiu(dst, R0, -1);
 
     __ bind(done);
   %}
@@ -8382,7 +8382,7 @@ instruct addI_Reg_Reg(mRegI dst, mRegI src1, mRegI src2) %{
     Register  dst = $dst$$Register;
     Register src1 = $src1$$Register;
     Register src2 = $src2$$Register;
-    __ addu32(dst, src1, src2);
+    __ addu(dst, src1, src2);
   %}
   ins_pipe( ialu_regI_regI );
 %}
@@ -8397,10 +8397,10 @@ instruct addI_Reg_imm(mRegI dst, mRegI src1,  immI src2) %{
     int       imm = $src2$$constant;
 
     if(Assembler::is_simm16(imm)) {
-       __ addiu32(dst, src1, imm);
+       __ addiu(dst, src1, imm);
     } else {
        __ move(AT, imm);
-       __ addu32(dst, src1, AT);
+       __ addu(dst, src1, AT);
     }
   %}
   ins_pipe( ialu_regI_regI );
@@ -8500,7 +8500,7 @@ instruct subI_Reg_Reg(mRegI dst, mRegI src1, mRegI src2) %{
     Register  dst = $dst$$Register;
     Register src1 = $src1$$Register;
     Register src2 = $src2$$Register;
-    __ subu32(dst, src1, src2);
+    __ subu(dst, src1, src2);
   %}
   ins_pipe( ialu_regI_regI );
 %}
@@ -8513,7 +8513,7 @@ instruct subI_Reg_imm(mRegI dst, mRegI src1,  immI src2) %{
     Register  dst = $dst$$Register;
     Register src1 = $src1$$Register;
     __ move(AT, -1 * $src2$$constant);
-    __ addu32(dst, src1, AT);
+    __ addu(dst, src1, AT);
   %}
   ins_pipe( ialu_regI_regI );
 %}
@@ -10289,7 +10289,7 @@ instruct  jmpLoopEnd(cmpOp cop, mRegI src1, mRegI src2, label labl) %{
     Label     &L = *($labl$$label);
     int     flag = $cop$$cmpcode;
 
-    __ addiu32(AT, op1, -1 * op2);
+    __ addiu(AT, op1, -1 * op2);
 
     switch(flag)
     {
@@ -10456,102 +10456,6 @@ instruct storeIConditional( memory mem, mRegI oldval, mRegI newval, FlagsReg cr 
     }
 %}
 
-  ins_pipe( long_memory_op );
-%}
-
-// Conditional-store of a long value.
-// ZF flag is set on success, reset otherwise.  Implemented with a CMPXCHG.
-instruct storeLConditional(memory mem, t2RegL oldval, mRegL newval, FlagsReg cr )
-%{
-  match(Set cr (StoreLConditional mem (Binary oldval newval)));
-  effect(KILL oldval);
-
-  format %{ "cmpxchg $mem, $newval\t# If $oldval == $mem then store $newval into $mem" %}
-  ins_encode%{
-		Register oldval = $oldval$$Register;
-		Register newval = $newval$$Register;
-		Address addr((Register)$mem$$base, $mem$$disp);  
-
-		int     index = $mem$$index;
-		int     scale = $mem$$scale;
-		int      disp = $mem$$disp;
-
-		guarantee(Assembler::is_simm16(disp), ""); 
-
-		if( scale != 0 ) Unimplemented(); 
-		if( index != 0 ) {
-			__ stop("in storeIConditional: index != 0");
-		} else {
-			__ cmpxchg(newval, addr, oldval);
-		}
-  %}
-  ins_pipe( long_memory_op );
-%}
-
-
-instruct compareAndSwapI( mRegI res, mRegP mem_ptr, mS2RegI oldval, mRegI newval) %{
-  match(Set res (CompareAndSwapI mem_ptr (Binary oldval newval)));
-  effect(KILL oldval);
-//  match(CompareAndSwapI mem_ptr (Binary oldval newval));
-  format %{ "CMPXCHG $newval, [$mem_ptr], $oldval @ compareAndSwapI\n\t"
-            "MOV    $res, 1 @ compareAndSwapI\n\t"
-            "BNE    AT, R0 @ compareAndSwapI\n\t"
-            "MOV    $res, 0 @ compareAndSwapI\n"
-          "L:" %}
-  ins_encode %{
-    Register newval = $newval$$Register;
-    Register oldval = $oldval$$Register;
-    Register res    = $res$$Register;
-    Address  addr($mem_ptr$$Register, 0);    
-    Label L;
-
-    __ cmpxchg32(newval, addr, oldval);
-    __ move(res, AT);
-  %}
-  ins_pipe( long_memory_op );
-%}
-
-//FIXME:
-instruct compareAndSwapP( mRegI res, mRegP mem_ptr, s2_RegP oldval, mRegP newval) %{
-  match(Set res (CompareAndSwapP mem_ptr (Binary oldval newval)));
-  effect(KILL oldval);
-  format %{ "CMPXCHG $newval, [$mem_ptr], $oldval @ compareAndSwapP\n\t"
-            "MOV    $res, AT @ compareAndSwapP\n\t"
-          "L:" %}
-  ins_encode %{
-    Register newval = $newval$$Register;
-    Register oldval = $oldval$$Register;
-    Register res    = $res$$Register;
-    Address  addr($mem_ptr$$Register, 0);    
-    Label L;
-
-    __ cmpxchg(newval, addr, oldval);
-    __ move(res, AT);
-  %}
-  ins_pipe( long_memory_op );
-%}
-
-instruct compareAndSwapN( mRegI res, mRegP mem_ptr, t2_RegN oldval, mRegN newval) %{
-  match(Set res (CompareAndSwapN mem_ptr (Binary oldval newval)));
-  effect(KILL oldval);
-  format %{ "CMPXCHG $newval, [$mem_ptr], $oldval @ compareAndSwapN\n\t"
-            "MOV    $res, AT @ compareAndSwapN\n\t"
-          "L:" %}
-  ins_encode %{
-    Register newval = $newval$$Register;
-    Register oldval = $oldval$$Register;
-    Register res    = $res$$Register;
-    Address  addr($mem_ptr$$Register, 0);    
-    Label L;
-
-    /* 2013/7/19 Jin: cmpxchg32 is implemented with ll/sc, which will do sign extension.
-     *      Thus, we should extend oldval's sign for correct comparision.
-     */
-    __ sll(oldval, oldval, 0);
-
-    __ cmpxchg32(newval, addr, oldval);
-    __ move(res, AT);
-  %}
   ins_pipe( long_memory_op );
 %}
 

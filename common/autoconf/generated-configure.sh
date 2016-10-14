@@ -3924,7 +3924,7 @@ fi
 #CUSTOM_AUTOCONF_INCLUDE
 
 # Do not change or remove the following line, it is needed for consistency checks:
-DATE_WHEN_GENERATED=1474965914
+DATE_WHEN_GENERATED=1475060504
 
 ###############################################################################
 #
@@ -7328,7 +7328,7 @@ $as_echo "$COMPILE_TYPE" >&6; }
     x86_64*) ZERO_ARCHDEF=AMD64 ;;
     x86)     ZERO_ARCHDEF=IA32  ;;
     mips|mipsel)         ZERO_ARCHDEF=MIPS32  ;;
-    mips64|mips64el)     ZERO_ARCHDEF=MIPS32  ;;
+    mips64|mips64el)     ZERO_ARCHDEF=MIPS64  ;;
     *)      ZERO_ARCHDEF=$(echo "${OPENJDK_TARGET_CPU_LEGACY_LIB}" | tr a-z A-Z)
   esac
 

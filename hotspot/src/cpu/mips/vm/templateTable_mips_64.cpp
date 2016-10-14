@@ -1178,11 +1178,11 @@ void TemplateTable::iop2(Operation op) {
 	switch (op) {
 		case add  :                    
 			__ pop_i(SSR); 
-			__ addu32(FSR, SSR, FSR); 
+			__ addu(FSR, SSR, FSR); 
 			break;
 		case sub  :  
 			__ pop_i(SSR); 
-			__ subu32(FSR, SSR, FSR); 
+			__ subu(FSR, SSR, FSR); 
 			break;
 		case mul  :                    
 			__ lw(SSR, SP, 0);
@@ -4103,7 +4103,7 @@ void TemplateTable::_new() {
     __ bind(allocate_shared);
     Label retry;
     //Address heap_top(T1, (int)Universe::heap()->top_addr());
-    Address heap_top(T1);
+    Address heap_top(T1, 0);
     //__ lui(T1, Assembler::split_high((int)Universe::heap()->top_addr()));
     __ li(T1, (long)Universe::heap()->top_addr());
 

@@ -48,39 +48,11 @@ bool CompiledIC::is_icholder_call_site(virtual_call_Relocation* call_site) {
   return is_icholder_entry(call->destination());
 }
 
-//-----------------------------------------------------------------------------
-// High-level access to an inline cache. Guaranteed to be MT-safe.
-
-CompiledIC::CompiledIC(nmethod* nm, NativeCall* call)
-  : _ic_call(call)
-{
-  address ic_call = call->instruction_address();
-
-  assert(ic_call != NULL, "ic_call address must be set");
-  assert(nm != NULL, "must pass nmethod");
-  assert(nm->contains(ic_call), "must be in nmethod");
-
-  // Search for the ic_call at the given address.
-  RelocIterator iter(nm, ic_call, ic_call+1);
-  bool ret = iter.next();
-  assert(ret == true, "relocInfo must exist at this address");
-  assert(iter.addr() == ic_call, "must find ic_call");
-  if (iter.type() == relocInfo::virtual_call_type) {
-    virtual_call_Relocation* r = iter.virtual_call_reloc();
-    _is_optimized = false;
-    _value = nativeMovConstReg_at(r->cached_value());
-  } else {
-    assert(iter.type() == relocInfo::opt_virtual_call_type, "must be a virtual call");
-    _is_optimized = true;
-    _value = NULL;
-  }
-}
-
 // ----------------------------------------------------------------------------
 
 #define __ _masm.
-void CompiledStaticCall::emit_to_interp_stub(CodeBuffer &cbuf) {
-
+address CompiledStaticCall::emit_to_interp_stub(CodeBuffer &cbuf) {
+#ifdef COMPILER2
   address mark = cbuf.insts_mark();  // get mark within main instrs section
 
   // Note that the code buffer's insts_mark is always relative to insts.
@@ -89,7 +61,7 @@ void CompiledStaticCall::emit_to_interp_stub(CodeBuffer &cbuf) {
 
   address base =
   __ start_a_stub(Compile::MAX_stubs_size);
-  if (base == NULL)  return;  // CodeBuffer::expand failed
+  if (base == NULL)  return NULL;  // CodeBuffer::expand failed
   // static stub relocation stores the instruction address of the call
 
   __ relocate(static_stub_Relocation::spec(mark), 0);
@@ -115,6 +87,10 @@ void CompiledStaticCall::emit_to_interp_stub(CodeBuffer &cbuf) {
   __ align(16);
   __ end_a_stub();
   // Update current stubs pointer and restore code_end.
+  return base;
+#else
+  ShouldNotReachHere();
+#endif
 }
 #undef __
 
@@ -135,7 +111,7 @@ void CompiledStaticCall::set_to_interpreted(methodHandle callee, address entry) 
   if (TraceICs) {
     ResourceMark rm;
     tty->print_cr("CompiledStaticCall@" INTPTR_FORMAT ": set_to_interpreted %s",
-                  instruction_address(),
+                  (intptr_t)instruction_address(),
                   callee->name_and_sig_as_C_string());
   }
 

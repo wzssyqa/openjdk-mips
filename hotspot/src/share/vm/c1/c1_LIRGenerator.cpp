@@ -717,7 +717,7 @@ void LIRGenerator::print_if_not_loaded(const NewInstance* new_instance) {
 #ifndef MIPS64
 void LIRGenerator::new_instance(LIR_Opr dst, ciInstanceKlass* klass, bool is_unresolved, LIR_Opr scratch1, LIR_Opr scratch2, LIR_Opr scratch3, LIR_Opr scratch4, LIR_Opr klass_reg, CodeEmitInfo* info) {
 #else
-void LIRGenerator::new_instance(LIR_Opr dst, ciInstanceKlass* klass, LIR_Opr scratch1, LIR_Opr scratch2, LIR_Opr scratch3, 
+void LIRGenerator::new_instance(LIR_Opr dst, ciInstanceKlass* klass, bool is_unresolved, LIR_Opr scratch1, LIR_Opr scratch2, LIR_Opr scratch3, 
                                 LIR_Opr scratch4, LIR_Opr scratch5, LIR_Opr scratch6,LIR_Opr klass_reg, CodeEmitInfo* info) {
 #endif
   klass2reg_with_patching(klass_reg, klass, info, is_unresolved);
@@ -3897,6 +3897,7 @@ void LIRGenerator::do_MemBar(MemBar* x) {
   }
 }
 
+#ifndef MIPS64
 LIR_Opr LIRGenerator::maybe_mask_boolean(StoreIndexed* x, LIR_Opr array, LIR_Opr value, CodeEmitInfo*& null_check_info) {
   if (x->check_boolean()) {
     LIR_Opr value_fixed = rlock_byte(T_BYTE);
@@ -3919,3 +3920,4 @@ LIR_Opr LIRGenerator::maybe_mask_boolean(StoreIndexed* x, LIR_Opr array, LIR_Opr
   }
   return value;
 }
+#endif

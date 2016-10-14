@@ -142,7 +142,7 @@ void NativeCall::verify() {
   }
 
   if (!li_64 && !li_48) {
-tty->print_cr("NativeCall::verify addr=%lx", addr_at(0));
+tty->print_cr("NativeCall::verify addr=%lx", (intptr_t)addr_at(0));
       fatal("not a call");
   }
 #endif
@@ -232,8 +232,8 @@ void  NativeCall::set_destination(address dest) {
 }
 
 void NativeCall::print() {
-  tty->print_cr(PTR_FORMAT ": call " PTR_FORMAT,
-                instruction_address(), destination());
+  tty->print_cr(INTPTR_FORMAT ": call " INTPTR_FORMAT,
+                (intptr_t)instruction_address(), (intptr_t)destination());
 }
 
 // Inserts a native call instruction at a given pc
@@ -299,8 +299,8 @@ void NativeMovConstReg::verify() {
 }
 
 void NativeMovConstReg::print() {
-  tty->print_cr(PTR_FORMAT ": mov reg, " INTPTR_FORMAT,
-              	instruction_address(), data());
+  tty->print_cr(INTPTR_FORMAT ": mov reg, " INTPTR_FORMAT,
+              	(intptr_t)instruction_address(), data());
 }
 
 intptr_t NativeMovConstReg::data() const { 
@@ -434,7 +434,7 @@ void NativeMovRegMem::verify() {
 
 
 void NativeMovRegMem::print() {
-  tty->print_cr("0x%x: mov reg, [reg + %x]", instruction_address(), offset());
+  tty->print_cr("0x%lx: mov reg, [reg + %x]", (intptr_t)instruction_address(), offset());
 }
 
 

@@ -98,7 +98,7 @@ bool frame::safe_for_sender(JavaThread *thread) {
 
 void frame::patch_pc(Thread* thread, address pc) {
 	if (TracePcPatching) {
-		tty->print_cr("patch_pc at address  0x%x [0x%x -> 0x%x] ", &((address *)_sp)[-1], ((address *)_sp)[-1], pc);
+		tty->print_cr("patch_pc at address  0x%lx [0x%lx -> 0x%lx] ", (intptr_t)&((address *)_sp)[-1], (intptr_t)((address *)_sp)[-1], (intptr_t)pc);
 	}
 
 	RegisterMap map((JavaThread *)thread, false);
@@ -366,7 +366,7 @@ bool frame::interpreter_frame_equals_unpacked_fp(intptr_t* fp) {
 	// adjusted with:
 	int diff = (method->max_locals() - method->size_of_parameters()) *
 		Interpreter::stackElementWords;
-	printf("^^^^^^^^^^^^^^^adjust fp in deopt fp = 0%x \n", (intptr_t)(fp - diff)); 
+	printf("^^^^^^^^^^^^^^^adjust fp in deopt fp = 0%lx \n", (intptr_t)(fp - diff)); 
 	return _fp == (fp - diff);
 }
 

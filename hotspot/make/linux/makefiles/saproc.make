@@ -76,6 +76,9 @@ endif
 SA_LFLAGS = $(MAPFLAG:FILENAME=$(SAMAPFILE)) $(LDFLAGS_HASH_STYLE)
 
 SAARCH ?= $(BUILDARCH)
+ifeq (,$(findstring mips,$(SAARCH)))
+  SAARCH_DEFINE = -D$(SAARCH) 
+endif
 
 $(LIBSAPROC): $(SASRCFILES) $(SAMAPFILE)
 	$(QUIETLY) if [ "$(BOOT_JAVA_HOME)" = "" ]; then \
@@ -83,7 +86,7 @@ $(LIBSAPROC): $(SASRCFILES) $(SAMAPFILE)
 	  exit 1; \
 	fi
 	@echo Making SA debugger back-end...
-	$(QUIETLY) $(CC) -D$(SAARCH) -D_GNU_SOURCE                      \
+	$(QUIETLY) $(CC) $(SAARCH_DEFINE) -D_GNU_SOURCE                 \
 		   -D_FILE_OFFSET_BITS=64                               \
                    $(SYMFLAG) $(ARCHFLAG) $(SHARED_FLAG) $(PICFLAG)     \
 	           -I$(SASRCDIR)                                        \

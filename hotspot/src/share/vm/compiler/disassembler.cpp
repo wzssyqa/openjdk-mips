@@ -54,9 +54,6 @@
 #include "shark/sharkEntry.hpp"
 #endif
 
-#ifdef MIPS64
-// do nothing.
-#else
 PRAGMA_FORMAT_MUTE_WARNINGS_FOR_GCC
 
 void*       Disassembler::_library               = NULL;
@@ -557,5 +554,3 @@ void Disassembler::decode(nmethod* nm, outputStream* st) {
 
   env.decode_instructions(p, end);
 }
-
-#endif //MIPS64 disassembler_mips.cpp implements. 2013/02/25

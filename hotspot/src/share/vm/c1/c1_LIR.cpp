@@ -2132,7 +2132,7 @@ void LIR_OpBranch::print_instr(outputStream* out) const {
 #ifdef MIPS64
   in_opr1()->print(out); out->print(" ");
   in_opr2()->print(out); out->print(" ");
-endif
+#endif
   if (block() != NULL) {
     out->print("[B%d] ", block()->block_id());
   } else if (stub() != NULL) {
@@ -2357,3 +2357,4 @@ void LIR_InsertionBuffer::verify() {
   assert(sum == number_of_ops(), "wrong total sum");
 }
 #endif
+

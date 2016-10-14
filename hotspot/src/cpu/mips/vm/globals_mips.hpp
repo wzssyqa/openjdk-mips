@@ -84,6 +84,7 @@ define_pd_global(uintx, TypeProfileLevel, 111);
 // Only c2 cares about this at the moment
 define_pd_global(intx, AllocatePrefetchStyle,        2);
 define_pd_global(intx, AllocatePrefetchDistance,     -1);
+define_pd_global(bool, PreserveFramePointer, false);
 
 #define ARCH_FLAGS(develop, product, diagnostic, experimental, notproduct) \
                                                                             \

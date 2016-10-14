@@ -52,9 +52,6 @@
 
 class decode_env;
 
-#ifdef MIPS64
- # include "disassembler_mips.hpp"
-#else
 // The disassembler prints out assembly code annotated
 // with Java specific information.
 
@@ -103,6 +100,9 @@ class Disassembler {
 #ifdef TARGET_ARCH_ppc
 # include "disassembler_ppc.hpp"
 #endif
+#ifdef TARGET_ARCH_mips
+# include "disassembler_mips.hpp"
+#endif
 
 
  public:
@@ -115,7 +115,5 @@ class Disassembler {
   static void decode(nmethod* nm,                outputStream* st = NULL);
   static void decode(address begin, address end, outputStream* st = NULL, CodeStrings c = CodeStrings());
 };
-
-#endif //MIPS64 has its own disassembler implements. 2013/02/25
 
 #endif // SHARE_VM_COMPILER_DISASSEMBLER_HPP

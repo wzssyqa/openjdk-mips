@@ -37,7 +37,13 @@
 #endif
 
 typedef int jint;
+//FIXME: should be long?
+#ifdef _LP64
+typedef long jlong;
+typedef unsigned long ujlong;
+#else
 typedef long long jlong;
 typedef unsigned long long ujlong;
+#endif // _LP64
 typedef signed char jbyte;
 #endif

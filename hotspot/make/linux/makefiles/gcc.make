@@ -148,6 +148,7 @@ endif
 CFLAGS += $(VM_PICFLAG)
 CFLAGS += -fno-rtti
 CFLAGS += -fno-exceptions
+CFLAGS += -Wno-error=deprecated-declarations
 CFLAGS += -D_REENTRANT
 ifeq ($(USE_CLANG),)
   CFLAGS += -fcheck-new

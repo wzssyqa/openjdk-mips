@@ -429,6 +429,71 @@ inline NativeGeneralJump* nativeGeneralJump_at(address address) {
   return jump;
 }
 
+// FIXME : NativeJump is needed now
+// Handles all kinds of jump on Loongson. Long/far, conditional/unconditional
+// 32 bits:
+//    far jump:
+//				lui   reg, split_high(addr)
+//				addiu reg, split_low(addr)
+//				jr    reg
+//				nop
+//    or 
+//				beq 	ZERO, ZERO, offset
+//				nop
+//
+
+//64 bits:
+//    far jump:
+//			    lui   rd, imm(63...48);
+//			    ori   rd, rd, imm(47...32);
+//			    dsll  rd, rd, 16;
+//			    ori   rd, rd, imm(31...16);
+//			    dsll  rd, rd, 16;
+//			    ori   rd, rd, imm(15...0);
+//			    jalr  rd
+//			    nop
+//		    
+class NativeJump: public NativeInstruction {
+public:
+  enum mips_specific_constants {
+    instruction_offset 	=    0,
+    beq_opcode         	=    0x10000000,//000100|00000|00000|offset
+    b_mask       	=    0xffff0000,
+    short_size    	=    8,
+#ifndef _LP64
+    instruction_size   =    4 * BytesPerInstWord
+#else
+    instruction_size   =    6 * BytesPerInstWord
+#endif
+  };
+
+  bool is_short() const { return (long_at(instruction_offset) & b_mask) == beq_opcode; }
+#ifdef _LP64
+  bool is_b_far();
+#endif
+  address instruction_address() const { return addr_at(instruction_offset); }
+  address jump_destination();
+
+  void  set_jump_destination(address dest);
+
+	// Creation
+  inline friend NativeGeneralJump* nativeGeneralJump_at(address address);
+
+	// Insertion of native general jump instruction
+  static void insert_unconditional(address code_pos, address entry);
+  static void replace_mt_safe(address instr_addr, address code_buffer);
+  static void check_verified_entry_alignment(address entry, address verified_entry){}
+  static void patch_verified_entry(address entry, address verified_entry, address dest);
+
+  void verify();
+};
+
+inline NativeJump* nativeJump_at(address address) {
+  NativeJump* jump = (NativeJump*)(address);
+  debug_only(jump->verify();)
+  return jump;
+}
+
 /*class NativePopReg : public NativeInstruction {
   public:
   enum Intel_specific_constants {

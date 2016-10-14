@@ -27,7 +27,7 @@
 #define OS_CPU_LINUX_MIPS_VM_OS_LINUX_MIPS_HPP
   static void setup_fpu() {}
 	static bool is_allocatable(size_t bytes);
-	static jint *get_previous_fp();
+	static jint *get_previous_fp(jint *sp);
 
   // Used to register dynamic code cache area with the OS
   // Note: Currently only used in 64 bit Windows implementations

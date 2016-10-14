@@ -70,7 +70,7 @@ void Relocation::pd_set_data_value(address x, intptr_t o, bool verify_only) {
   } else {
     *pd_address_in_code() = x + o;
   }
-#endif // AMD64
+#endif // MIPS64
 }
 
 

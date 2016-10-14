@@ -2248,10 +2248,10 @@ void InterpreterMacroAssembler::profile_arguments_type(Register mdp, Register ca
 
           //subl(tmp, i*TypeStackSlotEntries::per_arg_count());
           if (Assembler::is_simm16(-1 * i * TypeStackSlotEntries::per_arg_count())) {
-            addiu32(tmp, tmp, -1 * i * TypeStackSlotEntries::per_arg_count());
+            addiu(tmp, tmp, -1 * i * TypeStackSlotEntries::per_arg_count());
           } else {
             li(AT, i*TypeStackSlotEntries::per_arg_count());
-            subu32(tmp, tmp, AT);
+            subu(tmp, tmp, AT);
           }
 
           //cmpl(tmp, TypeStackSlotEntries::per_arg_count());
@@ -2275,7 +2275,7 @@ void InterpreterMacroAssembler::profile_arguments_type(Register mdp, Register ca
         subu(tmp, tmp, AT);
 
         //subl(tmp, 1);
-        addiu32(tmp, tmp, -1);
+        addiu(tmp, tmp, -1);
 
         Address arg_addr = argument_address(tmp);
         //movptr(tmp, arg_addr);
@@ -2303,10 +2303,10 @@ void InterpreterMacroAssembler::profile_arguments_type(Register mdp, Register ca
         //subl(tmp, TypeProfileArgsLimit*TypeStackSlotEntries::per_arg_count());
         int tmp_arg_counts = TypeProfileArgsLimit*TypeStackSlotEntries::per_arg_count();
         if (Assembler::is_simm16(-1 * tmp_arg_counts)) {
-          addiu32(tmp, tmp, -1 * tmp_arg_counts);
+          addiu(tmp, tmp, -1 * tmp_arg_counts);
         } else {
           move(AT, tmp_arg_counts);
-          subu32(mdp, mdp, AT);
+          subu(mdp, mdp, AT);
         }
       }
 

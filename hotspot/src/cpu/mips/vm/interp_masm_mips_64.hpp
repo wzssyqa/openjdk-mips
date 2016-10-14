@@ -33,7 +33,6 @@
 #include "interpreter/invocationCounter.hpp"
 #include "runtime/frame.hpp"
 
-
 class InterpreterMacroAssembler: public MacroAssembler {
 #ifndef CC_INTERP
  private:

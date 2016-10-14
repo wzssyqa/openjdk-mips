@@ -3287,7 +3287,7 @@ size_t os::Linux::find_large_page_size() {
 
 #ifndef ZERO
   large_page_size = IA32_ONLY(4 * M) AMD64_ONLY(2 * M) IA64_ONLY(256 * M) SPARC_ONLY(4 * M)
-                     ARM_ONLY(2 * M) PPC_ONLY(4 * M);
+                     ARM_ONLY(2 * M) PPC_ONLY(4 * M) MIPS32_ONLY(2 * M) MIPS64_ONLY(32 * M);
 #endif // ZERO
 
   FILE *fp = fopen("/proc/meminfo", "r");

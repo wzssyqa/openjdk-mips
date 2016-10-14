@@ -1063,7 +1063,8 @@ void LIRGenerator::do_NewInstance(NewInstance* x) {
 #endif
 //	new_instance(reg, x->klass(), FrameMap::_t0_oop_opr, FrameMap::_t1_oop_opr,FrameMap::_t2_oop_opr, LIR_OprFact::illegalOpr, klass_reg, info);
 	new_instance(reg, 
-		x->klass(), 
+		x->klass(),
+                false,
 		FrameMap::_t0_oop_opr, 
 		FrameMap::_t1_oop_opr,
 		FrameMap::_t2_oop_opr, 

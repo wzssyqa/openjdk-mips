@@ -41,39 +41,6 @@
 #include "runtime/sharedRuntime.hpp"
 #define __ _masm->
 
-static void select_different_registers(Register preserve,
-		Register extra,
-		Register &tmp1,
-		Register &tmp2) {
-	if (tmp1 == preserve) {
-		assert_different_registers(tmp1, tmp2, extra);
-		tmp1 = extra;
-	} else if (tmp2 == preserve) {
-		assert_different_registers(tmp1, tmp2, extra);
-		tmp2 = extra;
-	}
-	assert_different_registers(preserve, tmp1, tmp2);
-}
-
-
-
-static void select_different_registers(Register preserve,
-		Register extra,
-		Register &tmp1,
-		Register &tmp2,
-		Register &tmp3) {
-	if (tmp1 == preserve) {
-		assert_different_registers(tmp1, tmp2, tmp3, extra);
-		tmp1 = extra;
-	} else if (tmp2 == preserve) {
-		tmp2 = extra;
-	} else if (tmp3 == preserve) {
-		assert_different_registers(tmp1, tmp2, tmp3, extra);
-		tmp3 = extra;
-	}
-	assert_different_registers(preserve, tmp1, tmp2, tmp3);
-}
-
 // need add method Assembler::is_simm16 in assembler_gs2.hpp
 bool LIR_Assembler::is_small_constant(LIR_Opr opr) {
 	if (opr->is_constant()) {
@@ -132,14 +99,11 @@ address LIR_Assembler::double_constant(double d) {
 	}
 }
 
-
-
-
-
+//FIXME: what should we do here? I guess we should set some state registers of FPU
+// and clear some error
 void LIR_Assembler::reset_FPU() {
 	Unimplemented();
 }
-
 
 void LIR_Assembler::set_24bit_FPU() {
 	Unimplemented();
@@ -162,6 +126,7 @@ void LIR_Assembler::ffree(int i) {
 void LIR_Assembler::breakpoint() {
   __ brk(17);
 }
+
 //FIXME, opr can not be float?
 void LIR_Assembler::push(LIR_Opr opr) {
 	if (opr->is_single_cpu()) {
@@ -544,110 +509,6 @@ int LIR_Assembler::emit_deopt_handler() {
         return offset;
 
 }
-
-
-// Optimized Library calls
-// This is the fast version of java.lang.String.compare; it has not
-// OSR-entry and therefore, we generate a slow version for OSR's
-//void LIR_Assembler::emit_string_compare(IRScope* scope) {
-void LIR_Assembler::emit_string_compare(LIR_Opr arg0, LIR_Opr arg1, LIR_Opr dst, CodeEmitInfo* info) {
-	// get two string object in T0&T1
-	//receiver already in T0
-	__ ld_ptr(T1, arg1->as_register());
-	//__ ld_ptr(T2, T0, java_lang_String::value_offset_in_bytes());	//value, T_CHAR array
-	__ load_heap_oop(T2, Address(T0, java_lang_String::value_offset_in_bytes()));
-	__ ld_ptr(AT, T0, java_lang_String::offset_offset_in_bytes());	//offset
-	__ shl(AT, 1);
-	__ add(T2, T2, AT);
-	__ addi(T2, T2, arrayOopDesc::base_offset_in_bytes(T_CHAR));
-	// Now T2 is the address of the first char in first string(T0)
-
-	add_debug_info_for_null_check_here(info);
-	//__ ld_ptr(T3, T1, java_lang_String::value_offset_in_bytes());
-	__ load_heap_oop(T3, Address(T1, java_lang_String::value_offset_in_bytes()));
-	__ ld_ptr(AT, T1, java_lang_String::offset_offset_in_bytes());
-	__ shl(AT, 1);
-	__ add(T3, T3, AT);
-	__ addi(T3, T3, arrayOopDesc::base_offset_in_bytes(T_CHAR));
-	// Now T3 is the address of the first char in second string(T1)
-
-#ifndef _LP64
-//by_css
-	// compute minimum length (in T4) and difference of lengths (V0)
-	Label L;
-	__ lw (T4, Address(T0, java_lang_String::count_offset_in_bytes())); 
-	// the length of the first string(T0)
-	__ lw (T5, Address(T1, java_lang_String::count_offset_in_bytes()));	
-	// the length of the second string(T1)
-
-	__ subu(V0, T4, T5);
-	__ blez(V0, L);
-	__ delayed()->nop();
-	__ move (T4, T5);
-	__ bind (L);
-
-	Label Loop, haveResult, LoopEnd;
-	__ bind(Loop);
-	__ beq(T4, R0, LoopEnd);
-	__ delayed();
-
-	__ addi(T2, T2, 2);
-
-	// compare current character
-	__ lhu(T5, T2, -2);
-	__ lhu(T6, T3, 0);
-	__ bne(T5, T6, haveResult);
-	__ delayed();
-
-	__ addi(T3, T3, 2);
-
-	__ b(Loop);
-	__ delayed()->addi(T4, T4, -1);
-
-	__ bind(haveResult);
-	__ subu(V0, T5, T6);
-
-	__ bind(LoopEnd);
-#else
-	// compute minimum length (in T4) and difference of lengths (V0)
-	Label L;
-	__ lw (A4, Address(T0, java_lang_String::count_offset_in_bytes())); 
-	// the length of the first string(T0)
-	__ lw (A5, Address(T1, java_lang_String::count_offset_in_bytes()));	
-	// the length of the second string(T1)
-
-	__ dsubu(V0, A4, A5);
-	__ blez(V0, L);
-	__ delayed()->nop();
-	__ move (A4, A5);
-	__ bind (L);
-
-	Label Loop, haveResult, LoopEnd;
-	__ bind(Loop);
-	__ beq(A4, R0, LoopEnd);
-	__ delayed();
-
-	__ daddi(T2, T2, 2);
-
-	// compare current character
-	__ lhu(A5, T2, -2);
-	__ lhu(A6, T3, 0);
-	__ bne(A5, A6, haveResult);
-	__ delayed();
-
-	__ daddi(T3, T3, 2);
-
-	__ b(Loop);
-	__ delayed()->addi(A4, A4, -1);
-
-	__ bind(haveResult);
-	__ dsubu(V0, A5, A6);
-
-	__ bind(LoopEnd);
-#endif
-	return_op(FrameMap::_v0_opr);
-}
-
 
 void LIR_Assembler::return_op(LIR_Opr result) {
   assert(result->is_illegal() || !result->is_single_cpu() || result->as_register() == V0, "word returns are in V0");
@@ -3243,499 +3104,45 @@ void LIR_Assembler::emit_opTypeCheck(LIR_OpTypeCheck* op) {
 
 
 void LIR_Assembler::emit_compare_and_swap(LIR_OpCompareAndSwap* op) {
+  Address addr   = Address(op->addr()->as_register(), 0);
+  Register newval = op->new_value()->as_register();
+  Register cmpval = op->cmp_value()->as_register();
+  assert(newval != NULL, "new val must be register");
+  assert(cmpval != newval, "cmp and new values must be in different registers");
+  assert(cmpval != addr, "cmp and addr must be in different registers");
+  assert(newval != addr, "new value and addr must be in different registers");
   if (op->code() == lir_cas_long) {
 #ifdef _LP64
-    Register addr = (op->addr()->is_single_cpu() ? op->addr()->as_register() : op->addr()->as_register_lo());
-    Register newval = (op->new_value()->is_single_cpu() ? op->new_value()->as_register() : op->new_value()->as_register_lo());
-    Register cmpval = (op->cmp_value()->is_single_cpu() ? op->cmp_value()->as_register() : op->cmp_value()->as_register_lo());
-    assert(newval != NULL, "new val must be register");
-    assert(cmpval != newval, "cmp and new values must be in different registers");
-    assert(cmpval != addr, "cmp and addr must be in different registers");
-    assert(newval != addr, "new value and addr must be in different registers");
     if (os::is_MP()) {}    
-    __ cmpxchg(newval, addr, cmpval);		// 64-bit test-and-set
+    __ dcmpxchg(newval, addr, cmpval);		// 64-bit test-and-set
 #else
-    Register addr = op->addr()->as_register();
+    // We need to swap these registers with 32bit only Instruction
+    //FIXME
     if (os::is_MP()) {}    
-    __ cmpxchg8(op->new_value()->as_register_lo(), 
-	  op->new_value()->as_register_hi(),				
-	  addr,
-	  op->cmp_value()->as_register_lo(),
-	  op->cmp_value()->as_register_hi())
-#endif
-  } else if (op->code() == lir_cas_int || op->code() == lir_cas_obj) {
-    NOT_LP64(assert(op->addr()->is_single_cpu(), "must be single");)
-    Register addr = (op->addr()->is_single_cpu() ? op->addr()->as_register() : op->addr()->as_register_lo());
-    Register newval = op->new_value()->as_register();
-    Register cmpval = op->cmp_value()->as_register();
-    assert(newval != NULL, "new val must be register");
-    assert(cmpval != newval, "cmp and new values must be in different registers");
-    assert(cmpval != addr, "cmp and addr must be in different registers");
-    assert(newval != addr, "new value and addr must be in different registers");
-    if (op->code() == lir_cas_obj) {
-#ifdef _LP64
-	if (UseCompressedOops) {
-	    Register tmp_reg = S7;
-	    __ push(cmpval);
-	    __ encode_heap_oop(cmpval);
-	    __ move(tmp_reg, newval);
-	    __ encode_heap_oop(tmp_reg);
-	    if (os::is_MP()) {}
-	    __ cmpxchg32(tmp_reg, addr, cmpval);	// 32-bit test-and-set
-	    __ pop(cmpval);
-	} else 
-	{
-	    if (os::is_MP()) {}
-	    __ cmpxchg(newval, addr, cmpval);		// 64-bit test-and-set
-	}
-    } else 
-#endif
-    {
-	__ cmpxchg32(newval, addr, cmpval);	// 32-bit test-and-set
-    }
-  } else {
     Unimplemented();
+#endif
+  }else if (op->code() == lir_cas_int) {
+    if (os::is_MP()) {}    
+    __ cmpxchg(newval, addr, cmpval);		// 32-bit test-and-set
+  }else if (op->code() == lir_cas_obj) {
+#ifdef _LP64
+    if (os::is_MP()) {}    
+    __ dcmpxchg(newval, addr, cmpval);		// 64-bit test-and-set
+#else
+    if (os::is_MP()) {}    
+    __ cmpxchg(newval, addr, cmpval);		// 32-bit test-and-set
+#endif
   }
 }
+
 #ifndef MIPS64
 void LIR_Assembler::cmove(LIR_Condition condition, LIR_Opr opr1, LIR_Opr opr2, LIR_Opr result) {
     Unimplemented();
 }
 #endif
 void LIR_Assembler::arith_op(LIR_Code code, LIR_Opr left, LIR_Opr right, LIR_Opr dest, CodeEmitInfo* info,bool pop_fpu_stack) {
-  assert(info == NULL || ((code == lir_rem || code == lir_div || code == lir_sub) && right->is_double_cpu()), "info is only for ldiv/lrem");
-  if (left->is_single_cpu()) {
-    // left may not be equal to dest on mips.
-    //assert(left == dest, "left and dest must be equal");
-    Register lreg = left->as_register();
-
-    if (right->is_cpu_register()) {
-      // cpu register - cpu register
-	Register rreg, res;
-      if (right->is_single_cpu()) {
-	rreg = right->as_register();
-#ifdef _LP64
-	if(dest->is_double_cpu())
-	  res = dest->as_register_lo();
-	else
-#endif
-	  res = dest->as_register();
-      } else if (right->is_double_cpu()) {
-	assert(right->is_double_cpu(),"right must be long");
-	rreg = right->as_register_lo();
-	res = dest->as_register_lo();
-      } else {
-	ShouldNotReachHere();
-      }
-      switch (code) {
-	case lir_add: 
-#ifdef _LP64
-	  if (dest->type() == T_INT)
-	  __ addu32(res, lreg, rreg);  
-	  else
-#endif
-	  __ addu(res, lreg, rreg);  
-	  break;						
-
-	case lir_mul: 
-#ifndef _LP64
-	  //by aoqi
-	  __ mult(lreg, rreg);
-#else
-	  __ dmult(lreg, rreg);
-#endif
-	  __ nop();
-	  __ nop();
-	  __ mflo(res);
-#ifdef _LP64
-	  /* Jin: if res < 0, it must be sign-extended. Otherwise it will be a 64-bit positive number.
-           *
-           *  Example: java.net.URLClassLoader::string2int()
-           *   a6: 0xcafebab
-           *   s0: 16
-	   *
-           *   104 mul [a6|I] [s0|I] [t0|I]
-		   0x00000055655e3728: dmult a6, s0
-		   0x00000055655e372c: sll zero, zero, 0
-		   0x00000055655e3730: sll zero, zero, 0
-		   0x00000055655e3734: mflo t0          <-- error
-	   *
-	   *   t0: 0xFFFFFFFFcafebab0  (Right)
-	   *   t0: 0x00000000cafebab0  (Wrong)
-	   */
-	  if (dest->type() == T_INT)
-	    __ sll(res, res, 0);
-#endif
-	  break;
-
-	case lir_sub: 
-#ifdef _LP64
-	  if (dest->type() == T_INT)
-	  __ subu32(res, lreg, rreg);  
-	  else
-#endif
-	  __ subu(res, lreg, rreg);  
-	  break;
-
-	default:      
-	  ShouldNotReachHere();
-      }
-    } else if (right->is_stack()) {
-      // cpu register - stack
-      Unimplemented();
-    } else if (right->is_constant()) {
-      // cpu register - constant
-      Register res = dest->as_register();
-      jint c = right->as_constant_ptr()->as_jint();
-
-      switch (code) {
-	case lir_mul_strictfp:	
-	case lir_mul:
-	  __ move(AT, c);
-#ifndef _LP64
-	  //by aoqi
-	  __ mult(lreg, AT);
-#else
-	  __ dmult(lreg, AT);
-#endif
-	  __ nop();
-	  __ nop();
-	  __ mflo(res);
-#ifdef _LP64
-	  /* Jin: if res < 0, it must be sign-extended. Otherwise it will be a 64-bit positive number.
-           *
-           *  Example: java.net.URLClassLoader::string2int()
-           *   a6: 0xcafebab
-           *   s0: 16
-	   *
-           *   104 mul [a6|I] [s0|I] [t0|I]
-		   0x00000055655e3728: dmult a6, s0
-		   0x00000055655e372c: sll zero, zero, 0
-		   0x00000055655e3730: sll zero, zero, 0
-		   0x00000055655e3734: mflo t0          <-- error
-	   *
-	   *   t0: 0xFFFFFFFFcafebab0  (Right)
-	   *   t0: 0x00000000cafebab0  (Wrong)
-	   */
-	  if (dest->type() == T_INT)
-	    __ sll(res, res, 0);
-#endif
-	  break;
-
-	case lir_add:
-	  if (Assembler::is_simm16(c)) {
-	    __ addiu(res, lreg, c);
-	  } else {
-	    __ move(AT, c);
-	    __ addu(res, lreg, AT);
-	  }
-	  break;
-
-	case lir_sub:
-	  if (Assembler::is_simm16(-c)) {
-	    __ addi(res, lreg, -c);
-	  } else {
-	    __ move(AT, c);
-	    __ subu(res, lreg, AT);
-	  }
-	  break;
-
-	default: 
-	  ShouldNotReachHere();
-      }
-    } else {
-      ShouldNotReachHere();
-    }
-
-  } else if (left->is_double_cpu()) {
-    Register  op1_lo = left->as_register_lo();
-    Register  op1_hi = left->as_register_hi();
-    Register  op2_lo;
-    Register  op2_hi;
-    Register  dst_lo;
-    Register  dst_hi;
-
-    if(dest->is_single_cpu())
-    {
-       dst_lo = dest->as_register();
-    }
-    else
-    {
-#ifdef _LP64
-       dst_lo = dest->as_register_lo();
-#else
-       dst_lo = dest->as_register_lo();
-       dst_hi = dest->as_register_hi();
-#endif
-    }
-    if (right->is_constant()) {
-      op2_lo = AT;
-      op2_hi = R0;
-#ifndef _LP64
-      __ li(AT, right->as_constant_ptr()->as_jint());
-#else
-      __ li(AT, right->as_constant_ptr()->as_jlong_bits());
-#endif
-    } else if (right->is_double_cpu()) { // Double cpu
-      assert(right->is_double_cpu(),"right must be long");
-      assert(dest->is_double_cpu(), "dest must be long");
-      op2_lo = right->as_register_lo();
-      op2_hi = right->as_register_hi();
-    } else {
-#ifdef _LP64
-      op2_lo = right->as_register();
-#else
-      ShouldNotReachHere();
-#endif
-    }
-
-    NOT_LP64(assert_different_registers(op1_lo, op1_hi, op2_lo, op2_hi));
-// Jin: Why?
-//    LP64_ONLY(assert_different_registers(op1_lo, op2_lo));
-
-    switch (code) {
-      case lir_add:
-#ifndef _LP64
-	//by aoqi
-	__ addu(dst_lo, op1_lo, op2_lo);
-	__ sltu(AT, dst_lo, op2_lo);
-	__ addu(dst_hi, op1_hi, op2_hi);
-	__ addu(dst_hi, dst_hi, AT);
-#else
-	__ addu(dst_lo, op1_lo, op2_lo);
-#endif
-	break;
-
-      case lir_sub:
-#ifndef _LP64
-	//by aoqi
-	__ subu(dst_lo, op1_lo, op2_lo);
-	__ sltu(AT, op1_lo, dst_lo);
-	__ subu(dst_hi, op1_hi, op2_hi);
-	__ subu(dst_hi, dst_hi, AT);
-#else
-	__ subu(dst_lo, op1_lo, op2_lo);
-#endif
-	break;
-
-      case lir_mul:
-	{
-
-#ifndef _LP64
-	  //by aoqi
-	  Label zero, quick, done;
-	  //zero?
-	  __ orr(AT, op2_lo, op1_lo);
-	  __ beq(AT, R0, zero);
-	  __ delayed(); 
-	  __ move(dst_hi, R0);
-
-	  //quick?
-	  __ orr(AT, op2_hi, op1_hi);
-	  __ beq(AT, R0, quick);
-	  __ delayed()->nop();
-
-	  __ multu(op2_lo, op1_hi);
-	  __ nop();
-	  __ nop();
-	  __ mflo(dst_hi);	
-	  __ multu(op2_hi, op1_lo);
-	  __ nop();
-	  __ nop();
-	  __ mflo(AT);
-
-	  __ bind(quick);
-	  __ multu(op2_lo, op1_lo);
-	  __ addu(dst_hi, dst_hi, AT);
-	  __ nop();
-	  __ mflo(dst_lo);
-	  __ mfhi(AT);
-	  __ b(done);
-	  __ delayed()->addu(dst_hi, dst_hi, AT);
-
-	  __ bind(zero);
-	  __ move(dst_lo, R0);
-	  __ bind(done);
-#else
-	  Label zero, done;
-	  //zero?
-	  __ orr(AT, op2_lo, op1_lo);
-	  __ beq(AT, R0, zero);
-	  __ delayed(); 
-	  __ move(dst_hi, R0);
-
-#ifdef ASSERT
-	  //op1_hi, op2_hi should be 0
-	  {
-	    Label L;
-	    __ beq(op1_hi, R0, L);
-	    __ delayed()->nop();
-	    __ stop("wrong register, lir_mul");
-	    __ bind(L);
-	  }
-	  {
-	    Label L;
-	    __ beq(op2_hi, R0, L);
-	    __ delayed()->nop();
-	    __ stop("wrong register, lir_mul");
-	    __ bind(L);
-	  }
-#endif
-
-	  __ multu(op2_lo, op1_lo);
-	  __ nop();
-	  __ nop();
-	  __ mflo(dst_lo);
-	  __ b(done);
-	  __ delayed()->nop();
-
-	  __ bind(zero);
-	  __ move(dst_lo, R0);
-	  __ bind(done);
-#endif	//_LP64
-	}
-	break;
-
-      default:
-	ShouldNotReachHere();
-    }
-
-
-  } else if (left->is_single_fpu()) {
-    assert(right->is_single_fpu(),"right must be float");
-    assert(dest->is_single_fpu(), "dest must be float");
-
-    FloatRegister lreg = left->as_float_reg();
-    FloatRegister rreg = right->as_float_reg();
-    FloatRegister res = dest->as_float_reg();
-
-    switch (code) {
-      case lir_add: 
-	__ add_s(res, lreg, rreg);            
-	break;
-      case lir_sub: 
-	__ sub_s(res, lreg, rreg);          
-	break;
-      case lir_mul: 
-      case lir_mul_strictfp:
-	// i dont think we need special handling of this. FIXME
-	__ mul_s(res, lreg, rreg);
-	break;
-      case lir_div: 
-      case lir_div_strictfp:
-	__ div_s(res, lreg, rreg);
-	break;
-      default     : ShouldNotReachHere();
-    }
-  } else if (left->is_double_fpu()) {
-    assert(right->is_double_fpu(),"right must be double");
-    assert(dest->is_double_fpu(), "dest must be double");
-
-    FloatRegister lreg = left->as_double_reg();
-    FloatRegister rreg = right->as_double_reg();
-    FloatRegister res = dest->as_double_reg();
-
-    switch (code) {
-      case lir_add: 
-	__ add_d(res, lreg, rreg);            
-	break;
-      case lir_sub: 
-	__ sub_d(res, lreg, rreg);          
-	break;
-      case lir_mul: 
-      case lir_mul_strictfp:
-	// i dont think we need special handling of this. FIXME
-	// by yjl 9/13/2005
-	__ mul_d(res, lreg, rreg);
-	break;
-      case lir_div: 
-      case lir_div_strictfp:
-	__ div_d(res, lreg, rreg);
-	break;
-	//    case lir_rem: 
-	//      __ rem_d(res, lreg, rreg); 
-	//      break;
-      default     : ShouldNotReachHere();
-    }
-  }
-  else if (left->is_single_stack() || left->is_address()) {
-    assert(left == dest, "left and dest must be equal");
-
-    Address laddr;
-    if (left->is_single_stack()) {
-      laddr = frame_map()->address_for_slot(left->single_stack_ix());
-    } else if (left->is_address()) {
-      laddr = as_Address(left->as_address_ptr());
-    } else {
-      ShouldNotReachHere();
-    }
-
-    if (right->is_single_cpu()) {
-      Register rreg = right->as_register();
-      switch (code) {
-	case lir_add: 
-#ifndef _LP64
-	  //by aoqi
-	  __ lw(AT, laddr);
-	  __ add(AT, AT, rreg);
-	  __ sw(AT, laddr);	
-#else
-	  __ ld(AT, laddr);
-	  __ dadd(AT, AT, rreg);
-	  __ sd(AT, laddr);	
-#endif
-	  break;
-	case lir_sub: 
-#ifndef _LP64
-	  //by aoqi
-	  __ lw(AT, laddr);
-	  __ sub(AT,AT,rreg);
-	  __ sw(AT, laddr);	
-#else
-	  __ ld(AT, laddr);
-	  __ dsub(AT,AT,rreg);
-	  __ sd(AT, laddr);	
-#endif
-	  break;
-	default:      ShouldNotReachHere();
-      }
-    } else if (right->is_constant()) {
-#ifndef _LP64
-      jint c = right->as_constant_ptr()->as_jint();
-#else
-      jlong c = right->as_constant_ptr()->as_jlong_bits();
-#endif
-      switch (code) {
-	case lir_add: {
-			__ ld_ptr(AT, laddr); 
-#ifndef _LP64
-			__ addi(AT, AT, c); 
-#else
-			__ li(T8, c);
-			__ add(AT, AT, T8); 
-#endif
-			__ st_ptr(AT, laddr); 
-			break;
-		      }
-	case lir_sub: {
-			__ ld_ptr(AT, laddr); 
-#ifndef _LP64
-			__ addi(AT, AT, -c);
-#else
-			__ li(T8, -c);
-			__ add(AT, AT, T8); 
-#endif
-			__ st_ptr(AT, laddr);
-			break;
-		      }
-	default: ShouldNotReachHere();
-      }
-    } else {
-      ShouldNotReachHere();
-    }
-  } else {
-    ShouldNotReachHere();
-  }
+    //FIXME: it is about float.
+    Unimplemented();
 }
 
 void LIR_Assembler::intrinsic_op(LIR_Code code, LIR_Opr value, LIR_Opr unused, LIR_Opr dest, LIR_Op *op) {

@@ -137,7 +137,7 @@ ExtendedPC os::fetch_frame_from_context(void* ucVoid,
   if (((long)pc & 0xFFFFFFFF00000000UL) == 0)
   {
     pc = (address)((long)pc | 0x5500000000UL);
-    tty->print_cr("<Error> 32-bit pc: %lx", pc);
+    tty->print_cr("<Error> 32-bit pc: %lx", (intptr_t)pc);
   }
 
   if (uc != NULL) {
@@ -173,16 +173,15 @@ frame os::get_sender_for_C_frame(frame* fr) {
 
 //intptr_t* _get_previous_fp() {
 //see StubGenerator::generate_get_previous_fp in stubGenerator_gs2.cpp
-jint* os::get_previous_fp() {
+jint* os::get_previous_fp(jint *sp) {
 	int *pc;
-	int sp;
 	int *pc_limit = (int*)(void*)&os::get_previous_fp;
 	int insn;
 
 	{
 l_pc:;
 		 pc = (int*)&&l_pc;
-		 __asm__ __volatile__ ("move %0,  $sp" : "=r" (sp));
+		 __asm__ __volatile__ ("move %0,  $sp" : "=r" (*sp));
 	}
 
 	do {
@@ -194,8 +193,8 @@ l_pc:;
 		case 0x67bd:	/* daddiu $sp,$sp,-i */
 		case 0x63bd:	/* daddi $sp,$sp,-i */
 			assert ((short)bitfield(insn, 0, 16)<0, "bad frame");
-			sp -=	(short)bitfield(insn, 0, 16);
-			return (jint*)sp;
+			*sp -=	(short)bitfield(insn, 0, 16);
+			return sp;
 		}
 	} while (pc>pc_limit);
 
@@ -203,9 +202,10 @@ l_pc:;
 }
 
 frame os::current_frame() {
- tty->print("@@@@@@@@@@@@@@@@@@@get_previous_fp = 0x%lx \n", (intptr_t)(get_previous_fp())); 
+ jint pc = 0;
+ tty->print("@@@@@@@@@@@@@@@@@@@get_previous_fp = 0x%lx \n", (intptr_t)(get_previous_fp(&pc))); 
   frame myframe((intptr_t*)os::current_stack_pointer(), 
-                (intptr_t*)get_previous_fp(),
+                (intptr_t*)get_previous_fp(&pc),
                 CAST_FROM_FN_PTR(address, os::current_frame));
   if (os::is_first_C_frame(&myframe)) {
     // stack is not walkable
@@ -226,7 +226,7 @@ JVM_handle_linux_signal(int sig,
 			info->si_signo, 
 			info->si_code, 
 			info->si_errno,
-			info->si_addr);
+			(intptr_t)info->si_addr);
 #endif		  
 
   ucontext_t* uc = (ucontext_t*) ucVoid;
@@ -280,7 +280,7 @@ JVM_handle_linux_signal(int sig,
 
   pc = (address) os::Linux::ucontext_get_pc(uc);
 #ifndef PRODUCT
-  tty->print_cr("pc=%lx", pc);
+  tty->print_cr("pc=%lx", (intptr_t)pc);
   os::print_context(tty, uc);
 #endif
   //%note os_trap_1
@@ -361,7 +361,7 @@ JVM_handle_linux_signal(int sig,
       // a fault inside compiled code, the interpreter, or a stub
 #ifndef PRODUCT
       tty->print("java thread running in java code\n");
-      tty->print_cr("polling address = %lx, sig=%d", os::get_polling_page(), sig);
+      tty->print_cr("polling address = %lx, sig=%d", (intptr_t)os::get_polling_page(), sig);
 #endif	
       if (sig == SIGSEGV && os::is_poll_address((address)info->si_addr)) {
 
@@ -373,7 +373,7 @@ JVM_handle_linux_signal(int sig,
         CodeBlob* cb = CodeCache::find_blob_unsafe(pc);
         nmethod* nm = cb->is_nmethod() ? (nmethod*)cb : NULL;
 #ifndef PRODUCT
-	tty->print("cb = %lx, nm = %lx\n", cb, nm);
+	tty->print("cb = %lx, nm = %lx\n", (intptr_t)cb, (intptr_t)nm);
 #endif	
         if (nm != NULL && nm->has_unsafe_access()) {
           stub = StubRoutines::handler_for_unsafe_access();
@@ -510,8 +510,8 @@ JVM_handle_linux_signal(int sig,
           char buf[256];
           jio_snprintf(buf, sizeof(buf), "Execution protection violation "
                        "at " INTPTR_FORMAT
-                       ", unguarding " INTPTR_FORMAT ": %s, errno=%d", addr,
-                       page_start, (res ? "success" : "failed"), errno);
+                       ", unguarding " INTPTR_FORMAT ": %s, errno=%d", (intptr_t)addr,
+                       (intptr_t)page_start, (res ? "success" : "failed"), errno);
           tty->print_raw_cr(buf);
         }
         stub = pc;
@@ -812,50 +812,50 @@ void os::print_context(outputStream *st, void *context) {
 
   ucontext_t *uc = (ucontext_t*)context;
   st->print_cr("Registers:");
-  st->print(  "R0=" INTPTR_FORMAT, uc->uc_mcontext.gregs[0]);
-  st->print(", AT=" INTPTR_FORMAT, uc->uc_mcontext.gregs[1]);
-  st->print(", V0=" INTPTR_FORMAT, uc->uc_mcontext.gregs[2]);
-  st->print(", V1=" INTPTR_FORMAT, uc->uc_mcontext.gregs[3]);
+  st->print(  "R0=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[0]);
+  st->print(", AT=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[1]);
+  st->print(", V0=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[2]);
+  st->print(", V1=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[3]);
   st->cr();
-  st->print(  "A0=" INTPTR_FORMAT, uc->uc_mcontext.gregs[4]);
-  st->print(", A1=" INTPTR_FORMAT, uc->uc_mcontext.gregs[5]);
-  st->print(", A2=" INTPTR_FORMAT, uc->uc_mcontext.gregs[6]);
-  st->print(", A3=" INTPTR_FORMAT, uc->uc_mcontext.gregs[7]);
+  st->print(  "A0=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[4]);
+  st->print(", A1=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[5]);
+  st->print(", A2=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[6]);
+  st->print(", A3=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[7]);
   st->cr();
-  st->print(  "A4=" INTPTR_FORMAT, uc->uc_mcontext.gregs[8]);
-  st->print(", A5=" INTPTR_FORMAT, uc->uc_mcontext.gregs[9]);
-  st->print(", A6=" INTPTR_FORMAT, uc->uc_mcontext.gregs[10]);
-  st->print(", A7=" INTPTR_FORMAT, uc->uc_mcontext.gregs[11]);
+  st->print(  "A4=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[8]);
+  st->print(", A5=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[9]);
+  st->print(", A6=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[10]);
+  st->print(", A7=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[11]);
   st->cr();
-  st->print(  "T0=" INTPTR_FORMAT, uc->uc_mcontext.gregs[12]);
-  st->print(", T1=" INTPTR_FORMAT, uc->uc_mcontext.gregs[13]);
-  st->print(", T2=" INTPTR_FORMAT, uc->uc_mcontext.gregs[14]);
-  st->print(", T3=" INTPTR_FORMAT, uc->uc_mcontext.gregs[15]);
+  st->print(  "T0=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[12]);
+  st->print(", T1=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[13]);
+  st->print(", T2=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[14]);
+  st->print(", T3=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[15]);
   st->cr();
-  st->print(  "S0=" INTPTR_FORMAT, uc->uc_mcontext.gregs[16]);
-  st->print(", S1=" INTPTR_FORMAT, uc->uc_mcontext.gregs[17]);
-  st->print(", S2=" INTPTR_FORMAT, uc->uc_mcontext.gregs[18]);
-  st->print(", S3=" INTPTR_FORMAT, uc->uc_mcontext.gregs[19]);
+  st->print(  "S0=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[16]);
+  st->print(", S1=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[17]);
+  st->print(", S2=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[18]);
+  st->print(", S3=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[19]);
   st->cr();
-  st->print(  "S4=" INTPTR_FORMAT, uc->uc_mcontext.gregs[20]);
-  st->print(", S5=" INTPTR_FORMAT, uc->uc_mcontext.gregs[21]);
-  st->print(", S6=" INTPTR_FORMAT, uc->uc_mcontext.gregs[22]);
-  st->print(", S7=" INTPTR_FORMAT, uc->uc_mcontext.gregs[23]);
+  st->print(  "S4=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[20]);
+  st->print(", S5=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[21]);
+  st->print(", S6=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[22]);
+  st->print(", S7=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[23]);
   st->cr();
-  st->print(  "T8=" INTPTR_FORMAT, uc->uc_mcontext.gregs[24]);
-  st->print(", T9=" INTPTR_FORMAT, uc->uc_mcontext.gregs[25]);
-  st->print(", K0=" INTPTR_FORMAT, uc->uc_mcontext.gregs[26]);
-  st->print(", K1=" INTPTR_FORMAT, uc->uc_mcontext.gregs[27]);
+  st->print(  "T8=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[24]);
+  st->print(", T9=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[25]);
+  st->print(", K0=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[26]);
+  st->print(", K1=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[27]);
   st->cr();
-  st->print(  "GP=" INTPTR_FORMAT, uc->uc_mcontext.gregs[28]);
-  st->print(", SP=" INTPTR_FORMAT, uc->uc_mcontext.gregs[29]);
-  st->print(", FP=" INTPTR_FORMAT, uc->uc_mcontext.gregs[30]);
-  st->print(", RA=" INTPTR_FORMAT, uc->uc_mcontext.gregs[31]);
+  st->print(  "GP=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[28]);
+  st->print(", SP=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[29]);
+  st->print(", FP=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[30]);
+  st->print(", RA=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.gregs[31]);
   st->cr();
   st->cr();
 
   intptr_t *sp = (intptr_t *)os::Linux::ucontext_get_sp(uc);
-  st->print_cr("Top of Stack: (sp=" PTR_FORMAT ")", sp);
+  st->print_cr("Top of Stack: (sp=" PTR_FORMAT ")", (intptr_t)sp);
   //print_hex_dump(st, (address)sp, (address)(sp + 8*sizeof(intptr_t)), sizeof(intptr_t));
   print_hex_dump(st, (address)sp-32, (address)(sp + 32), sizeof(intptr_t));
   st->cr();
@@ -864,7 +864,7 @@ void os::print_context(outputStream *st, void *context) {
   // point to garbage if entry point in an nmethod is corrupted. Leave
   // this at the end, and hope for the best.
   address pc = os::Linux::ucontext_get_pc(uc);
-  st->print_cr("Instructions: (pc=" PTR_FORMAT ")", pc);
+  st->print_cr("Instructions: (pc=" PTR_FORMAT ")", (intptr_t)pc);
   print_hex_dump(st, pc - 64, pc + 64, sizeof(char));
   Disassembler::decode(pc - 80, pc + 80, st);
 }
