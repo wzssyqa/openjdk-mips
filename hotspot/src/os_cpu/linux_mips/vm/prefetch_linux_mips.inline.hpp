@@ -28,7 +28,6 @@ inline void Prefetch::read (void *loc, intx interval) {
         /* 2013.3.13 Jin: 'pref' is implemented as NOP in Loongson 3A */
         __asm__ __volatile__ (
                         "               .set push\n"
-                        "               .set mips32\n"
                         "               .set noreorder\n"
                         "       sync\n"
                         "       pref  0, 0(%[__loc]) \n"
@@ -42,7 +41,6 @@ inline void Prefetch::read (void *loc, intx interval) {
 inline void Prefetch::write(void *loc, intx interval) {
         __asm__ __volatile__ (
                         "               .set push\n"
-                        "               .set mips32\n"
                         "               .set noreorder\n"
                         "       sync\n"
                         "       pref  1, 0(%[__loc]) \n"
