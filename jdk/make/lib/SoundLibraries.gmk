@@ -140,11 +140,7 @@ else
        LIBJSOUND_CFLAGS += -DX_ARCH=X_PPC64
   endif
   
-  ifeq ($(OPENJDK_TARGET_CPU), mips)
-    LIBJSOUND_CFLAGS += -DX_ARCH=X_ZERO
-  endif
-
-  ifeq ($(OPENJDK_TARGET_CPU), mips64)
+  ifeq ($(OPENJDK_TARGET_CPU_ARCH), mips)
     LIBJSOUND_CFLAGS += -DX_ARCH=X_ZERO
   endif
 endif
