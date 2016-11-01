@@ -427,7 +427,7 @@
 #define MIPS
 #endif
 #define MIPS_ONLY(code) code
-#define NOT_MIPS(code)a
+#define NOT_MIPS(code)
 #else
 #undef MIPS
 #define MIPS_ONLY(code)
