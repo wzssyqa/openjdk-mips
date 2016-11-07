@@ -139,6 +139,7 @@ void TemplateTable::patch_bytecode(Bytecodes::Code bc, Register bc_reg,
   case Bytecodes::_fast_aputfield:
   case Bytecodes::_fast_bputfield:
   case Bytecodes::_fast_cputfield:
+  case Bytecodes::_fast_zputfield:
   case Bytecodes::_fast_dputfield:
   case Bytecodes::_fast_fputfield:
   case Bytecodes::_fast_iputfield:
@@ -3043,7 +3044,7 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   __ move(AT, 1<<ConstantPoolCacheEntry::is_volatile_shift);
   __ andr(T8, flags, AT);
 
-  Label notByte, notInt, notShort, notChar, notLong, notFloat, notObj, notDouble;
+  Label notByte, notInt, notShort, notChar, notBool, notLong, notFloat, notObj, notDouble;
   
   assert(btos == 0, "change code, btos != 0");
   // btos
@@ -3123,6 +3124,23 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   __ b(Done);
   __ delayed()->nop();
   __ bind(notChar);
+  // ztos
+  __ move(AT, ztos);
+  __ bne(flags, AT, notBool);
+  __ delayed()->nop();
+
+  __ pop(ztos);
+  if (!is_static) {
+    pop_and_check_object(obj); 
+  }
+  __ dadd(AT, obj, off);
+  __ sh(FSR, AT, 0);
+  if (!is_static) {
+    patch_bytecode(Bytecodes::_fast_zputfield, bc, off, true, byte_no);
+  }
+  __ b(Done);
+  __ delayed()->nop();
+  __ bind(notBool);
   // stos
   __ move(AT, stos);
   __ bne(flags, AT, notShort);
@@ -3373,6 +3391,7 @@ void TemplateTable::fast_storefield(TosState state) {
       __ sb(FSR, T2, 0);
       break;
     case Bytecodes::_fast_sputfield: // fall through
+    case Bytecodes::_fast_zputfield: // fall through
     case Bytecodes::_fast_cputfield: 
       __ sh(FSR, T2, 0);
       break;
@@ -3418,6 +3437,7 @@ void TemplateTable::fast_storefield(TosState state) {
       __ sb(FSR, T2, 0); 
       break;
     case Bytecodes::_fast_sputfield: // fall through
+    case Bytecodes::_fast_zputfield: // fall through
     case Bytecodes::_fast_cputfield: 
       __ sh(FSR, T2, 0);
       break;
